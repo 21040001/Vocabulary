@@ -8,6 +8,7 @@ export type WordDefinition = {
 };
 export type WordMeaning = { partOfSpeech: string; definitions: WordDefinition[] };
 export type WordExample = { en: string; uz: string };
+export type TranslationGroup = { pos: string | null; translations: string[] };
 
 export type Word = {
   /** İngilizce kelimeler için "apple", Özbekçe için "uz:olma" (eski kayıtlarla uyumlu) */
@@ -16,6 +17,7 @@ export type Word = {
   /** Kelimenin dili. Eski kayıtlarda yok -> 'en' kabul edilir. */
   lang?: Lang;
   translations: string[];
+  translationGroups?: TranslationGroup[];
   pronunciation?: string;
   audioUrl?: string;
   meanings: WordMeaning[];

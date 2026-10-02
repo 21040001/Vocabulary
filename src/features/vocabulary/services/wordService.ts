@@ -44,21 +44,32 @@ export const getWord = async (text: string, from: Lang = 'en'): Promise<Word> =>
   }
   const id = makeWordId(from, n);
   const cached = await getStoredWord(id);
-  if (cached) {
-    const w = cached.word;
-    // İnternetsizken kaydedilmiş İngilizce kelimeyi bu sefer tanımlarla tamamla
+    if (cached) {
+    let w = cached.word;
+    let changed = false;
+    // Tür bilgisi eklenmeden önce kaydedilmiş kelimeleri sözlükle tamamla
+    if (!w.translationGroups && w.source !== 'api') {
+      const local = await lookupWord(n, from).catch(() => null);
+      if (local) {
+        w = {
+          ...w,
+          translations: local.translations,
+          translationGroups: local.translationGroups,
+          examples: w.examples?.length ? w.examples : local.examples,
+          source: 'dictionary',
+        };
+        changed = true;
+      }
+    }
     if (from === 'en' && !w.meanings.length && !w.audioUrl) {
       const api = await fetchFromApi(n, from, false).catch(() => null);
       if (api && (api.meanings.length || api.audioUrl)) {
-        const enriched: Word = {
-          ...w,
-          pronunciation: api.pronunciation,
-          audioUrl: api.audioUrl,
-          meanings: api.meanings,
-        };
-        await saveWord(enriched);
-        return enriched;
+        w = { ...w, pronunciation: api.pronunciation, audioUrl: api.audioUrl, meanings: api.meanings };
+        changed = true;
       }
+    }
+    if (changed) {
+      await saveWord(w);
     }
     return w;
   }
@@ -81,6 +92,7 @@ export const getWord = async (text: string, from: Lang = 'en'): Promise<Word> =>
     word: local?.word ?? api?.word ?? text.trim(),
     lang: from,
     translations: local?.translations.length ? local.translations : api?.translations ?? [],
+    translationGroups: local?.translationGroups,
     pronunciation: api?.pronunciation,
     audioUrl: api?.audioUrl,
     meanings: api?.meanings ?? [],

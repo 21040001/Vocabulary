@@ -5,6 +5,7 @@
 import { getVocabDb } from '../../../services/database/vocabDb';
 import { Lang, makeWordId, Word, WordExample } from '../types/word';
 import { normalize, prefixUpperBound } from '../utils/normalize';
+import { TranslationGroup} from '../types/word';
 
 export type Suggestion = {
   word: string;
@@ -22,16 +23,35 @@ const MAX_TRANSLATIONS = 5;
 const MAX_EXAMPLES = 3;
 const placeholders = (n: number) => Array(n).fill('?').join(',');
 
+type Tr = { tid: number; text: string; pos: string | null };
+
+function groupByPos(list: Tr[]): TranslationGroup[] {
+  const groups: TranslationGroup[] = [];
+  for (const t of list) {
+    let g = groups.find(x => x.pos === t.pos);
+    if (!g) {
+      g = { pos: t.pos, translations: [] };
+      groups.push(g);
+    }
+    if (!g.translations.includes(t.text)) {
+      g.translations.push(t.text);
+    }
+  }
+  return groups;
+}
+
+const uniqueTexts = (list: Tr[]) => [...new Set(list.map(x => x.text))];
+
 /** wordId -> karşı dildeki çeviriler (önce insan yazımı, sonra sık kullanılan) */
 async function translationsFor(lang: Lang, ids: number[]) {
-  const out = new Map<number, { tid: number; text: string }[]>();
+  const out = new Map<number, Tr[]>();
   if (!ids.length) {
     return out;
   }
   const { self, other } = SIDE[lang];
   const db = await getVocabDb();
   const { rows } = await db.execute(
-    `SELECT t.id AS tid, t.${self} AS src, o.text
+    `SELECT t.id AS tid, t.${self} AS src, t.pos, o.text
        FROM translations t JOIN words o ON o.id = t.${other}
       WHERE t.${self} IN (${placeholders(ids.length)})
       ORDER BY t.verified DESC, COALESCE(o.freq_rank, 1e9), o.text`,
@@ -41,8 +61,10 @@ async function translationsFor(lang: Lang, ids: number[]) {
     const src = Number(r.src);
     const list = out.get(src) ?? [];
     const text = String(r.text);
-    if (list.length < MAX_TRANSLATIONS && !list.some(x => x.text === text)) {
-      list.push({ tid: Number(r.tid), text });
+    const pos = (r.pos as string | null) ?? null;
+    const known = list.some(x => x.text === text);
+    if ((known || uniqueTexts(list).length < MAX_TRANSLATIONS) && !list.some(x => x.text === text && x.pos === pos)) {
+      list.push({ tid: Number(r.tid), text, pos });
     }
     out.set(src, list);
   }
@@ -64,12 +86,13 @@ async function examplesFor(translationIds: number[]): Promise<WordExample[]> {
   return rows.map(r => ({ en: String(r.en), uz: String(r.uz) }));
 }
 
-function toWord(r: Row, lang: Lang, translations: string[], examples: WordExample[] = []): Word {
+function toWord(r: Row, lang: Lang, tr: Tr[], examples: WordExample[] = []): Word {
   return {
     id: makeWordId(lang, String(r.text_norm)),
     word: String(r.text),
     lang,
-    translations,
+    translations: uniqueTexts(tr),
+    translationGroups: groupByPos(tr),
     meanings: [],
     examples,
     source: 'dictionary',
@@ -96,7 +119,7 @@ export async function searchSuggestions(query: string, lang: Lang, limit = 8): P
   return rows.map(r => ({
     word: String(r.text),
     lang,
-    translations: (tr.get(Number(r.id)) ?? []).slice(0, 3).map(x => x.text),
+    translations: uniqueTexts(tr.get(Number(r.id)) ?? []).slice(0, 3),
   }));
 }
 
@@ -120,7 +143,7 @@ export async function lookupWord(text: string, lang: Lang): Promise<Word | null>
     return null;
   }
   const examples = await examplesFor(tr.map(x => x.tid));
-  return toWord(rows[0], lang, tr.map(x => x.text), examples);
+  return toWord(rows[0], lang, tr, examples);
 }
 
 /**
@@ -153,7 +176,7 @@ export async function getFrequentWords(lang: Lang, count: number, exclude: Set<s
   const words: Word[] = [];
   for (const r of picked) {
     const t = tr.get(Number(r.id)) ?? [];
-    words.push(toWord(r, lang, t.map(x => x.text), await examplesFor(t.map(x => x.tid))));
+    words.push(toWord(r, lang, t, await examplesFor(t.map(x => x.tid))));
   }
   return words;
 }

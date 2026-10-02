@@ -2,10 +2,14 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
+import { TranslationGroup } from '../types/word';
+import { posLabel } from '../utils/partOfSpeech';
 
 type P = {
   word: string;
   translations: string[];
+  groups?: TranslationGroup[];
+  posTags?: string[];
   pronunciation?: string;
   definition?: string;
   /** Yerel sözlükten örnek cümle ve çevirisi */
@@ -30,7 +34,25 @@ export default function TranslationResult(p: P) {
         </Pressable>
       </View>
       {p.pronunciation && <Text style={s.sub}>{p.pronunciation}</Text>}
-      <Text style={s.translation}>{p.translations.join(', ')}</Text>
+            {p.groups?.some(g => g.pos) ? (
+        p.groups.map((g, i) => (
+          <View key={`${g.pos}-${i}`} style={s.groupRow}>
+            <Text style={s.pos}>{posLabel(g.pos) ?? '—'}</Text>
+            <Text style={s.groupText}>{g.translations.join(', ')}</Text>
+          </View>
+        ))
+      ) : (
+        <>
+          <Text style={s.translation}>{p.translations.join(', ')}</Text>
+          {!!p.posTags?.length && (
+            <View style={s.tags}>
+              {p.posTags.map(t => (
+                <Text key={t} style={s.pos}>{t}</Text>
+              ))}
+            </View>
+          )}
+        </>
+      )}
       {p.isMachineTranslation && <Text style={s.badge}>Machine translation</Text>}
       {p.definition && <Text style={s.definition}>{p.definition}</Text>}
       {p.example && (
@@ -59,6 +81,23 @@ const s = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+    groupRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: spacing.sm, flexWrap: 'wrap' },
+  groupText: { flex: 1, fontSize: 19, fontWeight: '600', color: colors.success },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.sm },
+  pos: {
+    marginRight: spacing.sm,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    overflow: 'hidden',
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primary,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    textTransform: 'uppercase',
   },
   row: { flexDirection: 'row', alignItems: 'center' },
   word: { flex: 1, fontSize: 28, fontWeight: '700', color: colors.text },

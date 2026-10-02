@@ -9,6 +9,7 @@ import SuggestionList from '../components/SuggestionList';
 import TranslateButton from '../components/TranslateButton';
 import TranslationResult from '../components/TranslationResult';
 import useSuggestions from '../hooks/useSuggestions';
+import { displayGroups, meaningPosList } from '../utils/partOfSpeech';
 import useWord from '../hooks/useWord';
 import { getTodayStatistics, TodayStatistics } from '../services/statisticsService';
 import { Lang } from '../types/word';
@@ -81,6 +82,8 @@ export default function HomeScreen() {
           <TranslationResult
             word={word.word}
             translations={word.translations}
+            groups={displayGroups(word)}
+            posTags={meaningPosList(word)}
             pronunciation={word.pronunciation}
             definition={firstDefinition}
             example={firstExample ? (word.lang === 'uz' ? firstExample.uz : firstExample.en) : undefined}
