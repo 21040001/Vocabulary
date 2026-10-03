@@ -3,9 +3,8 @@
  * Her iki yön (en→uz, uz→en) aynı `translations` tablosundan çalışır.
  */
 import { getVocabDb } from '../../../services/database/vocabDb';
-import { Lang, makeWordId, Word, WordExample } from '../types/word';
+import { Lang, makeWordId, TranslationGroup, Word, WordExample } from '../types/word';
 import { normalize, prefixUpperBound } from '../utils/normalize';
-import { TranslationGroup} from '../types/word';
 
 export type Suggestion = {
   word: string;
@@ -23,8 +22,10 @@ const MAX_TRANSLATIONS = 5;
 const MAX_EXAMPLES = 3;
 const placeholders = (n: number) => Array(n).fill('?').join(',');
 
+/** wordId -> karşı dildeki çeviriler (önce insan yazımı, sonra sık kullanılan) */
 type Tr = { tid: number; text: string; pos: string | null };
 
+/** Çevirileri türe göre gruplar; gruplar ilk görünme sırasını korur. */
 function groupByPos(list: Tr[]): TranslationGroup[] {
   const groups: TranslationGroup[] = [];
   for (const t of list) {
@@ -41,6 +42,8 @@ function groupByPos(list: Tr[]): TranslationGroup[] {
 }
 
 const uniqueTexts = (list: Tr[]) => [...new Set(list.map(x => x.text))];
+
+/** Eski vocab.db dosyalarında `ipa` sütunu yok; varsa seç, yoksa NULL */
 let ipaExpr: string | null = null;
 async function ipaColumn(): Promise<string> {
   if (ipaExpr === null) {
@@ -50,7 +53,7 @@ async function ipaColumn(): Promise<string> {
   }
   return ipaExpr;
 }
-/** wordId -> karşı dildeki çeviriler (önce insan yazımı, sonra sık kullanılan) */
+
 async function translationsFor(lang: Lang, ids: number[]) {
   const out = new Map<number, Tr[]>();
   if (!ids.length) {
@@ -71,6 +74,7 @@ async function translationsFor(lang: Lang, ids: number[]) {
     const text = String(r.text);
     const pos = (r.pos as string | null) ?? null;
     const known = list.some(x => x.text === text);
+    // En fazla MAX_TRANSLATIONS farklı çeviri; aynı çeviri farklı türde de olabilir
     if ((known || uniqueTexts(list).length < MAX_TRANSLATIONS) && !list.some(x => x.text === text && x.pos === pos)) {
       list.push({ tid: Number(r.tid), text, pos });
     }
@@ -102,6 +106,7 @@ function toWord(r: Row, lang: Lang, tr: Tr[], examples: WordExample[] = []): Wor
     translations: uniqueTexts(tr),
     translationGroups: groupByPos(tr),
     pronunciation: r.ipa ? String(r.ipa) : undefined,
+    freqRank: r.freq_rank == null ? undefined : Number(r.freq_rank),
     meanings: [],
     examples,
     source: 'dictionary',
@@ -140,8 +145,8 @@ export async function lookupWord(text: string, lang: Lang): Promise<Word | null>
   }
   const db = await getVocabDb();
   const { rows } = await db.execute(
-    `SELECT id, text, text_norm, ${await ipaColumn()} AS ipa FROM words WHERE lang = ? AND text_norm = ?`,
-    [lang, q], 
+    `SELECT id, text, text_norm, freq_rank, ${await ipaColumn()} AS ipa FROM words WHERE lang = ? AND text_norm = ?`,
+    [lang, q],
   );
   if (!rows.length) {
     return null;
@@ -155,22 +160,32 @@ export async function lookupWord(text: string, lang: Lang): Promise<Word | null>
   return toWord(rows[0], lang, tr, examples);
 }
 
+export type RankRange = { min: number; max: number };
+
 /**
  * Öğrenilecek yeni kelimeler: en sık kullanılandan başlayarak,
  * `exclude` içindeki (zaten kayıtlı) kelimeleri atlar.
+ * `range` verilirse sadece o sıklık aralığından (seviye paketleri) seçer.
  */
-export async function getFrequentWords(lang: Lang, count: number, exclude: Set<string>): Promise<Word[]> {
+export async function getFrequentWords(
+  lang: Lang,
+  count: number,
+  exclude: Set<string>,
+  range?: RankRange,
+): Promise<Word[]> {
   const db = await getVocabDb();
   const { self } = SIDE[lang];
   const picked: Row[] = [];
   const pageSize = Math.max(50, count * 4);
+  const min = range?.min ?? 1;
+  const max = range?.max ?? 1e9;
   for (let offset = 0; picked.length < count && offset < 20000; offset += pageSize) {
     const { rows } = await db.execute(
-     `SELECT w.id, w.text, w.text_norm, ${await ipaColumn()} AS ipa FROM words w
-        WHERE w.lang = ? AND w.freq_rank IS NOT NULL
+      `SELECT w.id, w.text, w.text_norm, w.freq_rank, ${await ipaColumn()} AS ipa FROM words w
+        WHERE w.lang = ? AND w.freq_rank BETWEEN ? AND ?
           AND EXISTS (SELECT 1 FROM translations t WHERE t.${self} = w.id)
         ORDER BY w.freq_rank LIMIT ? OFFSET ?`,
-      [lang, pageSize, offset],
+      [lang, min, max, pageSize, offset],
     );
     if (!rows.length) {
       break;
@@ -188,4 +203,61 @@ export async function getFrequentWords(lang: Lang, count: number, exclude: Set<s
     words.push(toWord(r, lang, t, await examplesFor(t.map(x => x.tid))));
   }
   return words;
+}
+
+/**
+ * Seviye başına sözlükte kaç kelime var: [500, 500, 500, ..., 312]
+ * (sıklık sırası 1–500 = seviye 1, 501–1000 = seviye 2 ...)
+ */
+export async function getLevelCounts(lang: Lang, levelSize: number, maxLevels: number): Promise<number[]> {
+  const db = await getVocabDb();
+  const { self } = SIDE[lang];
+  const { rows } = await db.execute(
+    `SELECT CAST((w.freq_rank - 1) / CAST(? AS INTEGER) AS INTEGER) AS lvl, COUNT(*) AS n FROM words w
+      WHERE w.lang = ? AND w.freq_rank BETWEEN 1 AND ?
+        AND EXISTS (SELECT 1 FROM translations t WHERE t.${self} = w.id)
+      GROUP BY lvl ORDER BY lvl`,
+    [levelSize, lang, levelSize * maxLevels],
+  );
+  const counts = Array(maxLevels).fill(0);
+  for (const r of rows) {
+    const i = Number(r.lvl);
+    if (i >= 0 && i < maxLevels) {
+      counts[i] = Number(r.n);
+    }
+  }
+  return counts;
+}
+
+/**
+ * Çoktan seçmeli sorular için yanlış şıklar: verilen dilde, çevirisi olan,
+ * mümkünse benzer sıklıkta rastgele kelimeler. `exclude` normalize edilmiş metinlerdir.
+ */
+export async function getRandomWordTexts(
+  lang: Lang,
+  count: number,
+  exclude: Set<string>,
+  nearRank?: number,
+): Promise<string[]> {
+  const db = await getVocabDb();
+  const { self } = SIDE[lang];
+  const center = nearRank ?? 1000;
+  const lo = Math.max(1, center - 1500);
+  const hi = center + 1500;
+  const { rows } = await db.execute(
+    `SELECT w.text, w.text_norm FROM words w
+      WHERE w.lang = ? AND w.freq_rank BETWEEN ? AND ?
+        AND EXISTS (SELECT 1 FROM translations t WHERE t.${self} = w.id)
+      ORDER BY random() LIMIT ?`,
+    [lang, lo, hi, count * 3],
+  );
+  const out: string[] = [];
+  for (const r of rows) {
+    const n = String(r.text_norm);
+    if (!exclude.has(n) && out.length < count) {
+      exclude.add(n);
+      out.push(String(r.text));
+    }
+  }
+  return out;
 }

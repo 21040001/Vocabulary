@@ -44,18 +44,37 @@ export const getWord = async (text: string, from: Lang = 'en'): Promise<Word> =>
   }
   const id = makeWordId(from, n);
   const cached = await getStoredWord(id);
-    if (cached) {
+  if (cached) {
     let w = cached.word;
     let changed = false;
-        const needGroups = !w.translationGroups && w.source !== 'api';
-    if (needGroups || !w.pronunciation) {
+    // Tür bilgisi / okunuş eklenmeden önce kaydedilmiş kelimeleri sözlükle tamamla
+    const needGroups = !w.translationGroups && w.source !== 'api';
+    if (needGroups || !w.pronunciation || w.freqRank == null) {
       const local = await lookupWord(n, from).catch(() => null);
       if (local && needGroups) {
-        w = { ...w, pronunciation: local.pronunciation || w.pronunciation, audioUrl: local.audioUrl, meanings: local.meanings };
+        w = {
+          ...w,
+          translations: local.translations,
+          translationGroups: local.translationGroups,
+          examples: w.examples?.length ? w.examples : local.examples,
+          source: 'dictionary',
+        };
         changed = true;
       }
       if (local?.pronunciation && !w.pronunciation) {
         w = { ...w, pronunciation: local.pronunciation };
+        changed = true;
+      }
+      if (local?.freqRank != null && w.freqRank == null) {
+        w = { ...w, freqRank: local.freqRank };
+        changed = true;
+      }
+    }
+    // İnternetsizken kaydedilmiş İngilizce kelimeyi bu sefer tanımlarla tamamla
+    if (from === 'en' && !w.meanings.length && !w.audioUrl) {
+      const api = await fetchFromApi(n, from, false).catch(() => null);
+      if (api && (api.meanings.length || api.audioUrl)) {
+        w = { ...w, pronunciation: api.pronunciation || w.pronunciation, audioUrl: api.audioUrl, meanings: api.meanings };
         changed = true;
       }
     }
@@ -88,6 +107,7 @@ export const getWord = async (text: string, from: Lang = 'en'): Promise<Word> =>
     audioUrl: api?.audioUrl,
     meanings: api?.meanings ?? [],
     examples: local?.examples ?? [],
+    freqRank: local?.freqRank,
     source: local?.translations.length ? 'dictionary' : 'api',
   };
   if (!word.translations.length) {

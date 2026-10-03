@@ -8,6 +8,7 @@ export type WordDefinition = {
 };
 export type WordMeaning = { partOfSpeech: string; definitions: WordDefinition[] };
 export type WordExample = { en: string; uz: string };
+/** Kelime türüne göre gruplanmış çeviriler: { pos: 'noun', translations: ['olma'] } */
 export type TranslationGroup = { pos: string | null; translations: string[] };
 
 export type Word = {
@@ -17,12 +18,15 @@ export type Word = {
   /** Kelimenin dili. Eski kayıtlarda yok -> 'en' kabul edilir. */
   lang?: Lang;
   translations: string[];
+  /** Yerel sözlükten: çevirilerin kelime türüne göre grupları */
   translationGroups?: TranslationGroup[];
   pronunciation?: string;
   audioUrl?: string;
   meanings: WordMeaning[];
   /** Yerel sözlükten (Tatoeba) örnek cümleler */
   examples?: WordExample[];
+  /** Sıklık sırası (1 = en sık). Seviye paketleri için. */
+  freqRank?: number;
   /** Çeviri kaynağı: 'dictionary' = yerel sözlük, 'api' = Tilmoch makine çevirisi */
   source?: 'dictionary' | 'api';
 };

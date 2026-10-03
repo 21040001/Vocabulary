@@ -13,6 +13,11 @@ import WordDetailScreen from '../../features/vocabulary/screens/WordDetailScreen
 import FlashcardsScreen from '../../features/vocabulary/screens/FlashcardsScreen';
 import PronunciationScreen from '../../features/vocabulary/screens/PronunciationScreen';
 import SettingsScreen from '../../features/settings/screens/SettingsScreen';
+import PracticeHubScreen from '../../features/practice/screens/PracticeHubScreen';
+import ChoiceQuizScreen from '../../features/practice/screens/ChoiceQuizScreen';
+import FillBlankScreen from '../../features/practice/screens/FillBlankScreen';
+import MatchGameScreen from '../../features/practice/screens/MatchGameScreen';
+import LevelsScreen from '../../features/practice/screens/LevelsScreen';
 import { Word } from '../../features/vocabulary/types/word';
 import { useSettings } from '../settings/SettingsContext';
 
@@ -22,6 +27,11 @@ export type RootStackParamList = {
   Flashcards: undefined;
   Pronunciation: undefined;
   Settings: undefined;
+  WriteQuiz: undefined;
+  ChoiceQuiz: { mode: 'read' | 'listen' };
+  FillBlank: undefined;
+  Match: undefined;
+  Levels: undefined;
 };
 export type RootTabParamList = {
   Home: undefined;
@@ -39,7 +49,7 @@ const TAB_ICONS: Record<keyof RootTabParamList, [string, string]> = {
   Favorites: ['heart', 'heart-outline'],
   Learned: ['checkmark-circle', 'checkmark-circle-outline'],
   Statistics: ['stats-chart', 'stats-chart-outline'],
-  Quiz: ['school', 'school-outline'],
+  Quiz: ['barbell', 'barbell-outline'],
 };
 
 /** Sekme başlığının sağındaki ⚙️ düğmesi */
@@ -74,7 +84,7 @@ function MainTabs() {
       <Tab.Screen name="Favorites" component={FavoritesScreen} options={{ title: t('tab.favorites') }} />
       <Tab.Screen name="Learned" component={LearnedScreen} options={{ title: t('tab.learned') }} />
       <Tab.Screen name="Statistics" component={StatisticsScreen} options={{ title: t('tab.statistics') }} />
-      <Tab.Screen name="Quiz" component={QuizScreen} options={{ title: t('tab.quiz') }} />
+      <Tab.Screen name="Quiz" component={PracticeHubScreen} options={{ title: t('tab.quiz') }} />
     </Tab.Navigator>
   );
 }
@@ -107,6 +117,15 @@ export default function AppNavigator() {
           options={{ title: t('screen.pronunciation') }}
         />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: t('screen.settings') }} />
+        <Stack.Screen name="WriteQuiz" component={QuizScreen} options={{ title: t('practice.write') }} />
+        <Stack.Screen
+          name="ChoiceQuiz"
+          component={ChoiceQuizScreen}
+          options={({ route }) => ({ title: t(route.params.mode === 'listen' ? 'practice.listen' : 'practice.choice') })}
+        />
+        <Stack.Screen name="FillBlank" component={FillBlankScreen} options={{ title: t('practice.fill') }} />
+        <Stack.Screen name="Match" component={MatchGameScreen} options={{ title: t('practice.match') }} />
+        <Stack.Screen name="Levels" component={LevelsScreen} options={{ title: t('practice.levels') }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
