@@ -7,6 +7,7 @@ import HomeScreen from '../../features/vocabulary/screens/HomeScreen';
 import FavoritesScreen from '../../features/vocabulary/screens/FavoritesScreen';
 import LearnedScreen from '../../features/vocabulary/screens/LearnedScreen';
 import StatisticsScreen from '../../features/vocabulary/screens/StatisticsScreen';
+import PronunciationScreen from '../../features/vocabulary/screens/PronunciationScreen';
 import QuizScreen from '../../features/vocabulary/screens/QuizScreen';
 import WordDetailScreen from '../../features/vocabulary/screens/WordDetailScreen';
 import FlashcardsScreen from '../../features/vocabulary/screens/FlashcardsScreen';
@@ -17,6 +18,7 @@ export type RootStackParamList = {
   MainTabs: undefined;
   WordDetail: { word: Word };
   Flashcards: undefined;
+   Pronunciation: undefined;
 };
 export type RootTabParamList = {
   Home: undefined;
@@ -63,6 +65,7 @@ export default function AppNavigator() {
         <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
         <Stack.Screen name="WordDetail" component={WordDetailScreen} options={{ title: 'Word' }} />
         <Stack.Screen name="Flashcards" component={FlashcardsScreen} />
+        <Stack.Screen name="Pronunciation" component={PronunciationScreen} options={{ title: 'Pronunciation' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

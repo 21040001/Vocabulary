@@ -96,10 +96,15 @@ export default function QuizScreen() {
     setAutoCorrect(null);
   };
 
-  const flashcardsButton = (
-    <Pressable style={s.cardsBtn} onPress={() => nav.navigate('Flashcards')}>
-      <Text style={s.cardsBtnText}>🃏 Flashcards</Text>
-    </Pressable>
+    const flashcardsButton = (
+    <View style={s.modes}>
+      <Pressable style={s.cardsBtn} onPress={() => nav.navigate('Flashcards')}>
+        <Text style={s.cardsBtnText}>🃏 Cards</Text>
+      </Pressable>
+      <Pressable style={s.cardsBtn} onPress={() => nav.navigate('Pronunciation')}>
+        <Text style={s.cardsBtnText}>🎤 Speak</Text>
+      </Pressable>
+    </View>
   );
 
   const newWordsButtons = (
@@ -251,6 +256,7 @@ const s = StyleSheet.create({
     padding: 16,
     color: colors.text,
   },
+    modes: { flexDirection: 'row', gap: 6 },
   button: {
     marginTop: 16,
     width: '100%',
