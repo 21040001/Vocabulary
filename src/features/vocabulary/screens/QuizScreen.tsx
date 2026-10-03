@@ -1,6 +1,8 @@
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../../app/navigation/AppNavigator';
 import { getAllStoredWords, getStoredWordIds, saveWords } from '../../../services/storage/wordStorage';
 import { getFrequentWords } from '../services/dictionaryService';
 import { recordReview } from '../services/reviewService';
@@ -24,6 +26,7 @@ export default function QuizScreen() {
   const [done, setDone] = useState(false);
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const nav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const load = async () => {
     const now = new Date();
@@ -93,6 +96,12 @@ export default function QuizScreen() {
     setAutoCorrect(null);
   };
 
+  const flashcardsButton = (
+    <Pressable style={s.cardsBtn} onPress={() => nav.navigate('Flashcards')}>
+      <Text style={s.cardsBtnText}>🃏 Flashcards</Text>
+    </Pressable>
+  );
+
   const newWordsButtons = (
     <View style={{ width: '100%', marginTop: 24 }}>
       <Pressable style={s.button} onPress={() => addNewWords('en')} disabled={adding}>
@@ -103,6 +112,7 @@ export default function QuizScreen() {
       </Pressable>
       {adding && <ActivityIndicator style={{ marginTop: 12 }} />}
       {addError && <Text style={s.errorText}>{addError}</Text>}
+            <View style={{ alignItems: 'center', marginTop: 16 }}>{flashcardsButton}</View>
     </View>
   );
 
@@ -129,6 +139,7 @@ export default function QuizScreen() {
           <Pressable style={s.button} onPress={load}>
             <Text style={s.bt}>Practice Again</Text>
           </Pressable>
+          <View style={{ marginTop: 12 }}>{flashcardsButton}</View>
         </View>
       </SafeAreaView>
     );
@@ -151,8 +162,8 @@ export default function QuizScreen() {
   return (
     <SafeAreaView style={s.c}>
       <View style={s.p}>
-        <View style={s.top}>
-          <Text style={s.title}>Quiz</Text>
+        <View style={s.top}> 
+          {flashcardsButton}
           <Text>
             {i + 1} / {w.length}
           </Text>
@@ -209,7 +220,16 @@ export default function QuizScreen() {
 const s = StyleSheet.create({
   c: { flex: 1, backgroundColor: colors.background },
   p: { flex: 1, padding: spacing.lg },
-  top: { flexDirection: 'row', justifyContent: 'space-between' },
+    top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cardsBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    backgroundColor: colors.surface,
+  },
+  cardsBtnText: { color: colors.primary, fontWeight: '700' },
   title: { fontSize: 28, fontWeight: '700', color: colors.text },
   card: {
     marginTop: 32,
