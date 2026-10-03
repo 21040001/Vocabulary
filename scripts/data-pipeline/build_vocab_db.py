@@ -126,6 +126,18 @@ def gloss_to_english(gloss: str, pos: str) -> list[str]:
     return out[:4]
 
 
+def pick_ipa(obj: dict) -> str | None:
+    """Maddenin IPA telaffuzu. İngilizce'de Amerikan telaffuzu tercih edilir."""
+    ipas = [x for x in (obj.get("sounds") or []) if x.get("ipa")]
+    if not ipas:
+        return None
+    for want in ("US", "General-American"):
+        for x in ipas:
+            if want in (x.get("tags") or []):
+                return x["ipa"]
+    return ipas[0]["ipa"]
+
+
 # ------------------------------------------------------------ wiktionary okuma
 def iter_wiktextract(path: Path):
     opener = gzip.open if path.suffix == ".gz" else open
@@ -145,6 +157,7 @@ def iter_wiktextract(path: Path):
 def extract_pairs(wiktextract: Path):
     """(en, uz_display, uz_cyrillic, pos, sense, source) kümeleri üretir."""
     pairs = []
+    ipa: dict[tuple[str, str], str] = {}   # (lang, norm) -> IPA
     n_en = n_uz = 0
     for obj in iter_wiktextract(wiktextract):
         lc = obj.get("lang_code")
@@ -156,6 +169,9 @@ def extract_pairs(wiktextract: Path):
             en = clean_en(obj.get("word", ""))
             if not en:
                 continue
+            ip = pick_ipa(obj)
+            if ip:
+                ipa.setdefault(("en", normalize(en)), ip)
             trs = list(obj.get("translations") or [])
             for s in obj.get("senses") or []:
                 trs.extend(s.get("translations") or [])
@@ -171,6 +187,9 @@ def extract_pairs(wiktextract: Path):
             uz = clean_uz(obj.get("word", ""))
             if not uz:
                 continue
+            ip = pick_ipa(obj)
+            if ip:
+                ipa.setdefault(("uz", normalize(uz[0])), ip)
             for s in obj.get("senses") or []:
                 if SKIP_SENSE_TAGS & set(s.get("tags") or []):
                     continue
@@ -181,8 +200,8 @@ def extract_pairs(wiktextract: Path):
                 for en in gloss_to_english(gloss, pos):
                     pairs.append((en, uz[0], uz[1], pos, gloss[:200], "wiktionary-uz"))
                     n_uz += 1
-    log(f"Wiktionary: {n_en:,} eng→uz, {n_uz:,} uz→eng çift bulundu")
-    return pairs
+    log(f"Wiktionary: {n_en:,} eng→uz, {n_uz:,} uz→eng çift, {len(ipa):,} IPA telaffuzu bulundu")
+    return pairs, ipa
 
 
 # --------------------------------------------------------------- sıklık sırası
@@ -253,6 +272,7 @@ CREATE TABLE words (
   text TEXT NOT NULL,              -- görünen yazım (uz: resmî Latin, oʻ gʻ)
   text_norm TEXT NOT NULL,         -- arama anahtarı (normalize.ts ile aynı)
   text_cyrillic TEXT,              -- uz için biliniyorsa Kiril yazılış
+  ipa TEXT,                        -- telaffuz, ör. /ˈæp.əl/
   freq_rank INTEGER                -- 1 = en sık; NULL = bilinmiyor
 );
 CREATE UNIQUE INDEX idx_words_lang_norm ON words(lang, text_norm);
@@ -284,7 +304,7 @@ def build(args) -> None:
     wikt = Path(args.wiktextract) if args.wiktextract else download(WIKTEXTRACT_URL, cache / "raw-wiktextract-data.jsonl.gz")
 
     log("Wiktionary taranıyor (ilk çalıştırmada 10-30 dk sürebilir)…")
-    raw_pairs = extract_pairs(wikt)
+    raw_pairs, ipa = extract_pairs(wikt)
 
     # --- kelimeleri ve çevirileri tekilleştir
     en_words: dict[str, str] = {}               # norm -> görünen
@@ -339,9 +359,9 @@ def build(args) -> None:
     db.executescript(SCHEMA)
 
     db.executemany(
-        "INSERT INTO words(id, lang, text, text_norm, text_cyrillic, freq_rank) VALUES (?,?,?,?,?,?)",
-        [(stable_id("en", n), "en", t, n, None, en_rank.get(n)) for n, t in en_words.items()]
-        + [(stable_id("uz", n), "uz", t, n, c, uz_rank.get(n)) for n, (t, c) in uz_words.items()],
+        "INSERT INTO words(id, lang, text, text_norm, text_cyrillic, ipa, freq_rank) VALUES (?,?,?,?,?,?,?)",
+        [(stable_id("en", n), "en", t, n, None, ipa.get(("en", n)), en_rank.get(n)) for n, t in en_words.items()]
+        + [(stable_id("uz", n), "uz", t, n, c, ipa.get(("uz", n)), uz_rank.get(n)) for n, (t, c) in uz_words.items()],
     )
     tr_rows = []
     for (en_n, uz_n, pos), v in trans.items():

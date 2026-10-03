@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@mhpdev/react-native-speech": "^1.4.3",
     "@op-engineering/op-sqlite": "14.1.4",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/bottom-tabs": "^7.4.0",

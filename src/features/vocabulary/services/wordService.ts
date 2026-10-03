@@ -47,24 +47,15 @@ export const getWord = async (text: string, from: Lang = 'en'): Promise<Word> =>
     if (cached) {
     let w = cached.word;
     let changed = false;
-    // Tür bilgisi eklenmeden önce kaydedilmiş kelimeleri sözlükle tamamla
-    if (!w.translationGroups && w.source !== 'api') {
+        const needGroups = !w.translationGroups && w.source !== 'api';
+    if (needGroups || !w.pronunciation) {
       const local = await lookupWord(n, from).catch(() => null);
-      if (local) {
-        w = {
-          ...w,
-          translations: local.translations,
-          translationGroups: local.translationGroups,
-          examples: w.examples?.length ? w.examples : local.examples,
-          source: 'dictionary',
-        };
+      if (local && needGroups) {
+        w = { ...w, pronunciation: local.pronunciation || w.pronunciation, audioUrl: local.audioUrl, meanings: local.meanings };
         changed = true;
       }
-    }
-    if (from === 'en' && !w.meanings.length && !w.audioUrl) {
-      const api = await fetchFromApi(n, from, false).catch(() => null);
-      if (api && (api.meanings.length || api.audioUrl)) {
-        w = { ...w, pronunciation: api.pronunciation, audioUrl: api.audioUrl, meanings: api.meanings };
+      if (local?.pronunciation && !w.pronunciation) {
+        w = { ...w, pronunciation: local.pronunciation };
         changed = true;
       }
     }
@@ -93,7 +84,7 @@ export const getWord = async (text: string, from: Lang = 'en'): Promise<Word> =>
     lang: from,
     translations: local?.translations.length ? local.translations : api?.translations ?? [],
     translationGroups: local?.translationGroups,
-    pronunciation: api?.pronunciation,
+    pronunciation: api?.pronunciation || local?.pronunciation,
     audioUrl: api?.audioUrl,
     meanings: api?.meanings ?? [],
     examples: local?.examples ?? [],

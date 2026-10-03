@@ -2,11 +2,14 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
-import { TranslationGroup } from '../types/word';
+import { Lang, TranslationGroup } from '../types/word';
+import SpeakButton from './SpeakButton';
 import { posLabel } from '../utils/partOfSpeech';
 
 type P = {
   word: string;
+  lang: Lang;
+  audioUrl?: string;
   translations: string[];
   groups?: TranslationGroup[];
   posTags?: string[];
@@ -29,7 +32,8 @@ export default function TranslationResult(p: P) {
     <View style={s.card}>
       <View style={s.row}>
         <Text style={s.word}>{p.word}</Text>
-        <Pressable onPress={p.onToggleFavorite} hitSlop={8}>
+        <SpeakButton text={p.word} lang={p.lang} audioUrl={p.audioUrl} />
+        <Pressable onPress={p.onToggleFavorite} hitSlop={8} style={s.heartBtn}>
           <Text style={s.heart}>{p.isFavorite ? '♥' : '♡'}</Text>
         </Pressable>
       </View>
@@ -85,6 +89,7 @@ const s = StyleSheet.create({
     groupRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: spacing.sm, flexWrap: 'wrap' },
   groupText: { flex: 1, fontSize: 19, fontWeight: '600', color: colors.success },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.sm },
+    heartBtn: { marginLeft: spacing.md },
   pos: {
     marginRight: spacing.sm,
     paddingHorizontal: 8,

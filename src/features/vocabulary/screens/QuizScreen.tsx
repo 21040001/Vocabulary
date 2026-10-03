@@ -8,6 +8,7 @@ import { isAnswerCorrect } from '../utils/answerUtils';
 import { Lang, Word, wordLang } from '../types/word';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
+import SpeakButton from '../components/SpeakButton';
 
 const SIZE = 5;
 const NEW_WORDS_BATCH = 5;
@@ -160,6 +161,9 @@ export default function QuizScreen() {
           <Text>What does this word mean?</Text>
           <Text style={s.word}>{cur.word}</Text>
           {cur.pronunciation && <Text style={s.sub}>{cur.pronunciation}</Text>}
+          <View style={{ marginTop: 12 }}>
+            <SpeakButton text={cur.word} lang={wordLang(cur)} audioUrl={cur.audioUrl} />
+          </View>
           <TextInput
             style={s.input}
             placeholder={`Type the ${target} translation...`}

@@ -41,7 +41,15 @@ function groupByPos(list: Tr[]): TranslationGroup[] {
 }
 
 const uniqueTexts = (list: Tr[]) => [...new Set(list.map(x => x.text))];
-
+let ipaExpr: string | null = null;
+async function ipaColumn(): Promise<string> {
+  if (ipaExpr === null) {
+    const db = await getVocabDb();
+    const { rows } = await db.execute('PRAGMA table_info(words)');
+    ipaExpr = rows.some(r => r.name === 'ipa') ? 'ipa' : 'NULL';
+  }
+  return ipaExpr;
+}
 /** wordId -> karşı dildeki çeviriler (önce insan yazımı, sonra sık kullanılan) */
 async function translationsFor(lang: Lang, ids: number[]) {
   const out = new Map<number, Tr[]>();
@@ -93,6 +101,7 @@ function toWord(r: Row, lang: Lang, tr: Tr[], examples: WordExample[] = []): Wor
     lang,
     translations: uniqueTexts(tr),
     translationGroups: groupByPos(tr),
+    pronunciation: r.ipa ? String(r.ipa) : undefined,
     meanings: [],
     examples,
     source: 'dictionary',
@@ -131,8 +140,8 @@ export async function lookupWord(text: string, lang: Lang): Promise<Word | null>
   }
   const db = await getVocabDb();
   const { rows } = await db.execute(
-    'SELECT id, text, text_norm FROM words WHERE lang = ? AND text_norm = ?',
-    [lang, q],
+    `SELECT id, text, text_norm, ${await ipaColumn()} AS ipa FROM words WHERE lang = ? AND text_norm = ?`,
+    [lang, q], 
   );
   if (!rows.length) {
     return null;
@@ -157,7 +166,7 @@ export async function getFrequentWords(lang: Lang, count: number, exclude: Set<s
   const pageSize = Math.max(50, count * 4);
   for (let offset = 0; picked.length < count && offset < 20000; offset += pageSize) {
     const { rows } = await db.execute(
-      `SELECT w.id, w.text, w.text_norm FROM words w
+     `SELECT w.id, w.text, w.text_norm, ${await ipaColumn()} AS ipa FROM words w
         WHERE w.lang = ? AND w.freq_rank IS NOT NULL
           AND EXISTS (SELECT 1 FROM translations t WHERE t.${self} = w.id)
         ORDER BY w.freq_rank LIMIT ? OFFSET ?`,

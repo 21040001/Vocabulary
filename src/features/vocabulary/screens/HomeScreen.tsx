@@ -13,11 +13,12 @@ import { displayGroups, meaningPosList } from '../utils/partOfSpeech';
 import useWord from '../hooks/useWord';
 import { getTodayStatistics, TodayStatistics } from '../services/statisticsService';
 import { Lang } from '../types/word';
+
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 
 export default function HomeScreen() {
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState('a');
   const [lang, setLang] = useState<Lang>('en');
   const [searched, setSearched] = useState('');
   const [stats, setStats] = useState<TodayStatistics | null>(null);
@@ -81,6 +82,8 @@ export default function HomeScreen() {
         {word && state && (
           <TranslationResult
             word={word.word}
+            lang={word.lang ?? 'en'}
+            audioUrl={word.audioUrl}
             translations={word.translations}
             groups={displayGroups(word)}
             posTags={meaningPosList(word)}
