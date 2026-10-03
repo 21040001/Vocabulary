@@ -1,22 +1,31 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Animated, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, SafeAreaView, ScrollView, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getAllStoredWords, StoredWord } from '../../../services/storage/wordStorage';
 import SpeakButton from '../components/SpeakButton';
 import { recordReview } from '../services/reviewService';
 import { Lang, Word, wordLang } from '../types/word';
 import { displayGroups, posLabel } from '../utils/partOfSpeech';
-import { colors } from '../../../theme/colors';
+import { useT } from '../../../app/settings/SettingsContext';
+import { makeStyles } from '../../../theme/makeStyles';
 import { spacing } from '../../../theme/spacing';
+import type { TKey } from '../../../i18n/strings';
+
+/**
+ * Kart çevirme (flashcard) ile ezber.
+ * - Ön yüz: kelime. Dokununca döner, arka yüzde çeviriler + örnek cümle.
+ * - "Bilmedim" denen kart oturumun sonuna tekrar eklenir; bilinene kadar döner.
+ * - Kelimenin tekrar takvimine (reviewService) sadece İLK cevap işlenir.
+ */
 
 type Deck = 'due' | 'favorites' | 'all';
 type Side = 'word' | 'translation';
 
 const SESSION_SIZE = 15;
-const DECKS: { key: Deck; label: string }[] = [
-  { key: 'due', label: 'To review' },
-  { key: 'favorites', label: 'Favorites' },
-  { key: 'all', label: 'All' },
+const DECKS: { key: Deck; label: TKey }[] = [
+  { key: 'due', label: 'cards.due' },
+  { key: 'favorites', label: 'cards.favorites' },
+  { key: 'all', label: 'cards.all' },
 ];
 
 function shuffle<T>(a: T[]): T[] {
@@ -44,6 +53,8 @@ function pickDeck(all: StoredWord[], deck: Deck): Word[] {
 }
 
 export default function FlashcardsScreen() {
+  const s = useStyles();
+  const t = useT();
   const [deck, setDeck] = useState<Deck>('due');
   const [front, setFront] = useState<Side>('word');
   const [queue, setQueue] = useState<Word[]>([]);
@@ -52,7 +63,7 @@ export default function FlashcardsScreen() {
   const [missed, setMissed] = useState<Word[]>([]);
   const [flipped, setFlipped] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const answered = useRef(new Set<string>());
+  const answered = useRef(new Set<string>()); // ilk cevabı verilmiş kartlar
   const flip = useRef(new Animated.Value(0)).current;
 
   const start = useCallback(async (d: Deck) => {
@@ -109,14 +120,12 @@ export default function FlashcardsScreen() {
       <View style={s.segment}>
         {DECKS.map(d => (
           <Pressable key={d.key} style={[s.segBtn, deck === d.key && s.segActive]} onPress={() => setDeck(d.key)}>
-            <Text style={[s.segText, deck === d.key && s.segTextActive]}>{d.label}</Text>
+            <Text style={[s.segText, deck === d.key && s.segTextActive]}>{t(d.label)}</Text>
           </Pressable>
         ))}
       </View>
       <Pressable style={s.dirBtn} onPress={() => setFront(f => (f === 'word' ? 'translation' : 'word'))}>
-        <Text style={s.dirText}>
-          Front side: {front === 'word' ? 'word → translation' : 'translation → word'} ⇄
-        </Text>
+        <Text style={s.dirText}>{t(front === 'word' ? 'cards.frontWord' : 'cards.frontTrans')}</Text>
       </Pressable>
     </View>
   );
@@ -125,6 +134,7 @@ export default function FlashcardsScreen() {
     return <SafeAreaView style={s.c} />;
   }
 
+  // Oturum bitti
   if (!cur) {
     const empty = total === 0;
     return (
@@ -134,25 +144,21 @@ export default function FlashcardsScreen() {
           <View style={s.done}>
             {empty ? (
               <>
-                <Text style={s.doneTitle}>No cards here</Text>
+                <Text style={s.doneTitle}>{t('cards.emptyTitle')}</Text>
                 <Text style={s.doneSub}>
-                  {deck === 'due'
-                    ? 'Nothing to review right now. Try "All", or add new words in Quiz.'
-                    : deck === 'favorites'
-                    ? 'Mark words with ♥ to study them here.'
-                    : 'Search words or add new words in Quiz first.'}
+                  {t(deck === 'due' ? 'cards.emptyDue' : deck === 'favorites' ? 'cards.emptyFav' : 'cards.emptyAll')}
                 </Text>
               </>
             ) : (
               <>
-                <Text style={s.doneTitle}>Session complete 🎉</Text>
+                <Text style={s.doneTitle}>{t('cards.done')}</Text>
                 <Text style={s.score}>
                   {known} / {total}
                 </Text>
-                <Text style={s.doneSub}>known on first try</Text>
+                <Text style={s.doneSub}>{t('cards.firstTry')}</Text>
                 {missed.length > 0 && (
                   <View style={s.missedBox}>
-                    <Text style={s.missedTitle}>Keep practicing</Text>
+                    <Text style={s.missedTitle}>{t('cards.keepPracticing')}</Text>
                     {missed.map(m => (
                       <Text key={m.id} style={s.missedRow}>
                         <Text style={{ fontWeight: '700' }}>{m.word}</Text> — {m.translations.join(', ')}
@@ -161,7 +167,7 @@ export default function FlashcardsScreen() {
                   </View>
                 )}
                 <Pressable style={s.primary} onPress={() => start(deck)}>
-                  <Text style={s.primaryText}>Start again</Text>
+                  <Text style={s.primaryText}>{t('cards.startAgain')}</Text>
                 </Pressable>
               </>
             )}
@@ -184,13 +190,13 @@ export default function FlashcardsScreen() {
           </Text>
         </View>
 
-        <Pressable onPress={toggleFlip} accessibilityRole="button" accessibilityHint="Flip the card">
+        <Pressable onPress={toggleFlip} accessibilityRole="button" accessibilityHint={t('cards.tapToFlip')}>
           <View style={s.cardArea}>
             <Animated.View
               pointerEvents={flipped ? 'none' : 'auto'}
               style={[s.card, { transform: [{ perspective: 1000 }, { rotateY: frontRotate }] }]}>
               <CardFace word={cur} side={front} />
-              <Text style={s.hint}>Tap to flip</Text>
+              <Text style={s.hint}>{t('cards.tapToFlip')}</Text>
             </Animated.View>
             <Animated.View
               pointerEvents={flipped ? 'auto' : 'none'}
@@ -203,15 +209,15 @@ export default function FlashcardsScreen() {
         {flipped ? (
           <View style={s.answerRow}>
             <Pressable style={[s.answerBtn, s.bad]} onPress={() => answer(false)}>
-              <Text style={s.answerText}>✕ Didn't know</Text>
+              <Text style={s.answerText}>{t('cards.didntKnow')}</Text>
             </Pressable>
             <Pressable style={[s.answerBtn, s.good]} onPress={() => answer(true)}>
-              <Text style={s.answerText}>✓ Knew it</Text>
+              <Text style={s.answerText}>{t('cards.knewIt')}</Text>
             </Pressable>
           </View>
         ) : (
           <Pressable style={s.primary} onPress={toggleFlip}>
-            <Text style={s.primaryText}>Show answer</Text>
+            <Text style={s.primaryText}>{t('cards.showAnswer')}</Text>
           </Pressable>
         )}
       </ScrollView>
@@ -219,7 +225,10 @@ export default function FlashcardsScreen() {
   );
 }
 
+/** Kartın bir yüzü: kelime tarafı ya da çeviri tarafı */
 function CardFace({ word, side, detailed }: { word: Word; side: Side; detailed?: boolean }) {
+  const s = useStyles();
+  const t = useT();
   const lang = wordLang(word);
   const other: Lang = lang === 'en' ? 'uz' : 'en';
   const groups = useMemo(() => displayGroups(word), [word]);
@@ -233,7 +242,9 @@ function CardFace({ word, side, detailed }: { word: Word; side: Side; detailed?:
         <View style={{ marginTop: spacing.md }}>
           <SpeakButton text={word.word} lang={lang} audioUrl={word.audioUrl} size={44} />
         </View>
-        {detailed && ex && <Text style={s.example}>“{lang === 'uz' ? ex.uz : ex.en}”</Text>}
+        {detailed && ex && (
+          <Text style={s.example}>“{lang === 'uz' ? ex.uz : ex.en}”</Text>
+        )}
       </View>
     );
   }
@@ -242,34 +253,36 @@ function CardFace({ word, side, detailed }: { word: Word; side: Side; detailed?:
     <View style={s.face}>
       {groups.map((g, i) => (
         <View key={i} style={s.groupRow}>
-          {g.pos && <Text style={s.pos}>{posLabel(g.pos)}</Text>}
+          {g.pos && <Text style={s.pos}>{posLabel(g.pos, t)}</Text>}
           <Text style={s.transText}>{g.translations.join(', ')}</Text>
         </View>
       ))}
       <View style={{ marginTop: spacing.md }}>
         <SpeakButton text={word.translations[0] ?? ''} lang={other} size={40} />
       </View>
-      {detailed && ex && <Text style={s.example}>“{lang === 'uz' ? ex.en : ex.uz}”</Text>}
+      {detailed && ex && (
+        <Text style={s.example}>“{lang === 'uz' ? ex.en : ex.uz}”</Text>
+      )}
     </View>
   );
 }
 
 const CARD_H = 320;
 
-const s = StyleSheet.create({
-  c: { flex: 1, backgroundColor: colors.background },
+const useStyles = makeStyles(c => ({
+  c: { flex: 1, backgroundColor: c.background },
   p: { padding: spacing.lg },
-  segment: { flexDirection: 'row', padding: 4, borderRadius: 12, backgroundColor: colors.border },
+  segment: { flexDirection: 'row', padding: 4, borderRadius: 12, backgroundColor: c.border },
   segBtn: { flex: 1, paddingVertical: 9, borderRadius: 9, alignItems: 'center' },
-  segActive: { backgroundColor: colors.surface },
-  segText: { fontWeight: '600', color: colors.textSecondary },
-  segTextActive: { color: colors.primary },
+  segActive: { backgroundColor: c.surface },
+  segText: { fontWeight: '600', color: c.textSecondary },
+  segTextActive: { color: c.primary },
   dirBtn: { marginTop: spacing.sm, alignSelf: 'center', padding: spacing.xs },
-  dirText: { color: colors.primary, fontWeight: '600' },
+  dirText: { color: c.primary, fontWeight: '600' },
   progressRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.md, gap: 8 },
-  progressBar: { flex: 1, height: 8, borderRadius: 4, backgroundColor: colors.border, overflow: 'hidden' },
-  progressFill: { height: 8, backgroundColor: colors.primary },
-  progressText: { color: colors.textSecondary, fontVariant: ['tabular-nums'] },
+  progressBar: { flex: 1, height: 8, borderRadius: 4, backgroundColor: c.border, overflow: 'hidden' },
+  progressFill: { height: 8, backgroundColor: c.primary },
+  progressText: { color: c.textSecondary, fontVariant: ['tabular-nums'] },
   cardArea: { height: CARD_H, marginTop: spacing.lg },
   card: {
     position: 'absolute',
@@ -278,17 +291,17 @@ const s = StyleSheet.create({
     right: 0,
     height: CARD_H,
     borderRadius: 20,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: spacing.lg,
     justifyContent: 'center',
     backfaceVisibility: 'hidden',
   },
-  cardBack: { borderColor: colors.primary },
+  cardBack: { borderColor: c.primary },
   face: { alignItems: 'center' },
-  bigWord: { fontSize: 38, fontWeight: '700', color: colors.text, textAlign: 'center' },
-  ipa: { marginTop: spacing.xs, fontSize: 16, color: colors.textSecondary },
+  bigWord: { fontSize: 38, fontWeight: '700', color: c.text, textAlign: 'center' },
+  ipa: { marginTop: spacing.xs, fontSize: 16, color: c.textSecondary },
   groupRow: { flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', justifyContent: 'center', marginTop: 6 },
   pos: {
     marginRight: 8,
@@ -298,34 +311,34 @@ const s = StyleSheet.create({
     overflow: 'hidden',
     fontSize: 12,
     fontWeight: '700',
-    color: colors.primary,
+    color: c.primary,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     textTransform: 'uppercase',
   },
-  transText: { fontSize: 24, fontWeight: '700', color: colors.success, textAlign: 'center' },
-  example: { marginTop: spacing.md, fontStyle: 'italic', color: colors.textSecondary, textAlign: 'center', lineHeight: 20 },
-  hint: { position: 'absolute', bottom: 12, alignSelf: 'center', fontSize: 12, color: colors.textSecondary },
-  primary: { marginTop: spacing.lg, padding: 16, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center' },
-  primaryText: { color: colors.white, fontWeight: '700', fontSize: 16 },
+  transText: { fontSize: 24, fontWeight: '700', color: c.success, textAlign: 'center' },
+  example: { marginTop: spacing.md, fontStyle: 'italic', color: c.textSecondary, textAlign: 'center', lineHeight: 20 },
+  hint: { position: 'absolute', bottom: 12, alignSelf: 'center', fontSize: 12, color: c.textSecondary },
+  primary: { marginTop: spacing.lg, padding: 16, borderRadius: 12, backgroundColor: c.primary, alignItems: 'center' },
+  primaryText: { color: c.white, fontWeight: '700', fontSize: 16 },
   answerRow: { flexDirection: 'row', gap: 8, marginTop: spacing.lg },
   answerBtn: { flex: 1, padding: 16, borderRadius: 12, alignItems: 'center' },
-  bad: { backgroundColor: '#DC2626' },
-  good: { backgroundColor: colors.success },
-  answerText: { color: colors.white, fontWeight: '700', fontSize: 16 },
+  bad: { backgroundColor: c.danger },
+  good: { backgroundColor: c.success },
+  answerText: { color: c.white, fontWeight: '700', fontSize: 16 },
   done: { alignItems: 'center', marginTop: spacing.xl },
-  doneTitle: { fontSize: 26, fontWeight: '700', color: colors.text, textAlign: 'center' },
-  doneSub: { marginTop: spacing.sm, color: colors.textSecondary, textAlign: 'center' },
-  score: { marginTop: spacing.md, fontSize: 48, fontWeight: '700', color: colors.primary },
+  doneTitle: { fontSize: 26, fontWeight: '700', color: c.text, textAlign: 'center' },
+  doneSub: { marginTop: spacing.sm, color: c.textSecondary, textAlign: 'center' },
+  score: { marginTop: spacing.md, fontSize: 48, fontWeight: '700', color: c.primary },
   missedBox: {
     alignSelf: 'stretch',
     marginTop: spacing.lg,
     padding: spacing.md,
     borderRadius: 12,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
-  missedTitle: { fontWeight: '700', color: colors.text, marginBottom: 6 },
-  missedRow: { marginTop: 4, color: colors.text },
-});
+  missedTitle: { fontWeight: '700', color: c.text, marginBottom: 6 },
+  missedRow: { marginTop: 4, color: c.text },
+}));

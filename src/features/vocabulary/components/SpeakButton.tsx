@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, Text } from 'react-native';
-import { colors } from '../../../theme/colors';
+import { Alert, Platform, Pressable, Text } from 'react-native';
+import { useT } from '../../../app/settings/SettingsContext';
+import { makeStyles } from '../../../theme/makeStyles';
 import { openVoiceInstaller, pronounce } from '../../../services/speech/speech';
 import { Lang } from '../types/word';
 
 type Props = { text: string; lang: Lang; audioUrl?: string; size?: number };
 
+/** 🔈 düğmesi: kelimeyi seslendirir */
 export default function SpeakButton({ text, lang, audioUrl, size = 40 }: Props) {
+  const s = useStyles();
+  const t = useT();
   const [busy, setBusy] = useState(false);
 
   const onPress = async () => {
@@ -18,11 +22,14 @@ export default function SpeakButton({ text, lang, audioUrl, size = 40 }: Props) 
       const r = await pronounce(text, lang, audioUrl);
       if (r === 'no-voice') {
         Alert.alert(
-          'Voice not installed',
-          'Your phone has no Uzbek voice. You can install one in the text-to-speech settings.',
+          t('speak.noVoiceTitle'),
+          t('speak.noVoiceMsg'),
           Platform.OS === 'android'
-            ? [{ text: 'Cancel', style: 'cancel' }, { text: 'Open settings', onPress: openVoiceInstaller }]
-            : [{ text: 'OK' }],
+            ? [
+                { text: t('common.cancel'), style: 'cancel' },
+                { text: t('speak.openSettings'), onPress: openVoiceInstaller },
+              ]
+            : [{ text: t('common.ok') }],
         );
       }
     } catch (e) {
@@ -37,14 +44,14 @@ export default function SpeakButton({ text, lang, audioUrl, size = 40 }: Props) 
       onPress={onPress}
       hitSlop={8}
       accessibilityRole="button"
-      accessibilityLabel={`Pronounce ${text}`}
+      accessibilityLabel={text}
       style={[s.btn, { width: size, height: size, borderRadius: size / 2 }, busy && s.busy]}>
       <Text style={{ fontSize: size * 0.45 }}>{busy ? '🔊' : '🔈'}</Text>
     </Pressable>
   );
 }
 
-const s = StyleSheet.create({
-  btn: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border },
-  busy: { borderColor: colors.primary },
-});
+const useStyles = makeStyles(c => ({
+  btn: { alignItems: 'center', justifyContent: 'center', backgroundColor: c.background, borderWidth: 1, borderColor: c.border },
+  busy: { borderColor: c.primary },
+}));

@@ -1,6 +1,7 @@
 import React from 'react';
-import { StyleSheet, TextInput } from 'react-native';
-import { colors } from '../../../theme/colors';
+import { TextInput } from 'react-native';
+import { useTheme } from '../../../app/settings/SettingsContext';
+import { makeStyles } from '../../../theme/makeStyles';
 import { spacing } from '../../../theme/spacing';
 
 type Props = {
@@ -11,6 +12,8 @@ type Props = {
 };
 
 export default function SearchInput({ value, onChangeText, onSubmit, placeholder }: Props) {
+  const s = useStyles();
+  const { colors } = useTheme();
   return (
     <TextInput
       style={s.input}
@@ -18,7 +21,7 @@ export default function SearchInput({ value, onChangeText, onSubmit, placeholder
       onChangeText={onChangeText}
       onSubmitEditing={onSubmit}
       returnKeyType="search"
-      placeholder={placeholder ?? 'Search an English word...'}
+      placeholder={placeholder}
       placeholderTextColor={colors.textSecondary}
       autoCapitalize="none"
       autoCorrect={false}
@@ -26,14 +29,14 @@ export default function SearchInput({ value, onChangeText, onSubmit, placeholder
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles(c => ({
   input: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: 12,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     padding: spacing.md,
     fontSize: 16,
-    color: colors.text,
+    color: c.text,
   },
-});
+}));

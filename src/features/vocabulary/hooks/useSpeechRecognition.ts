@@ -9,22 +9,31 @@ import {
   startListening,
   stopListening,
 } from 'react-native-speech-recognition-kit';
+import { useT } from '../../../app/settings/SettingsContext';
 
 const TIMEOUT_MS = 10000;
 
-async function ensureMicPermission(): Promise<boolean> {
+async function ensureMicPermission(title: string, message: string, ok: string): Promise<boolean> {
   if (Platform.OS !== 'android') {
-    return true;
+    return true; // iOS izni sistem kendisi sorar (Info.plist gerekli)
   }
   const r = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO, {
-    title: 'Microphone',
-    message: 'The microphone is used to check your pronunciation.',
-    buttonPositive: 'OK',
+    title,
+    message,
+    buttonPositive: ok,
   });
   return r === PermissionsAndroid.RESULTS.GRANTED;
 }
 
+/**
+ * Telefonun konuşma tanıma servisi.
+ *   const { listen, stop, listening, partial, error } = useSpeechRecognition();
+ *   const alternatives = await listen('en-US');   // ["apple", "apples", ...]
+ */
 export default function useSpeechRecognition() {
+  const t = useT();
+  const tRef = useRef(t);
+  tRef.current = t;
   const [listening, setListening] = useState(false);
   const [partial, setPartial] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -54,8 +63,8 @@ export default function useSpeechRecognition() {
         finish(alts);
       }),
       addEventListener(EV.PARTIAL_RESULTS, (e: any) => setPartial(String(e?.value ?? ''))),
-      addEventListener(EV.ERROR, (e: any) => {
-        setError(String(e?.message ?? 'Speech recognition error'));
+      addEventListener(EV.ERROR, () => {
+        setError(tRef.current('pron.errGeneric'));
         finish([]);
       }),
     ];
@@ -69,15 +78,15 @@ export default function useSpeechRecognition() {
     async (locale = 'en-US'): Promise<string[]> => {
       setError(null);
       setPartial('');
-      if (!(await ensureMicPermission())) {
-        setError('Microphone permission denied');
+      if (!(await ensureMicPermission(t('pron.micTitle'), t('pron.micMessage'), t('common.ok')))) {
+        setError(t('pron.errPermission'));
         return [];
       }
       if (!(await isRecognitionAvailable().catch(() => false))) {
-        setError('Speech recognition is not available on this device');
+        setError(t('pron.errUnavailable'));
         return [];
       }
-      // Dil verilmezse telefonun dili kullanılır; İngilizce'yi zorla
+      // Tanıma dili verilmezse telefonun dili kullanılır; İngilizce'yi zorla
       await setRecognitionLanguage(locale).catch(() => false);
       const p = new Promise<string[]>(res => {
         resolver.current = res;
@@ -95,7 +104,7 @@ export default function useSpeechRecognition() {
       }
       return p;
     },
-    [finish],
+    [finish, t],
   );
 
   const stop = useCallback(() => {

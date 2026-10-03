@@ -1,8 +1,9 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useSettings } from '../../../app/settings/SettingsContext';
 import { StoredWord } from '../../../services/storage/wordStorage';
-import { colors } from '../../../theme/colors';
+import { makeStyles } from '../../../theme/makeStyles';
 import { spacing } from '../../../theme/spacing';
 
 type Props = {
@@ -10,10 +11,11 @@ type Props = {
   onPress: () => void;
   /** Verilirse sağda "listeden çıkar" düğmesi görünür */
   onRemove?: () => void;
-  removeLabel?: string;
 };
 
-export default function WordCard({ item, onPress, onRemove, removeLabel = 'Remove' }: Props) {
+export default function WordCard({ item, onPress, onRemove }: Props) {
+  const s = useStyles();
+  const { colors, t } = useSettings();
   return (
     <Pressable style={s.card} onPress={onPress}>
       <View style={{ flex: 1 }}>
@@ -28,7 +30,7 @@ export default function WordCard({ item, onPress, onRemove, removeLabel = 'Remov
           hitSlop={10}
           style={s.remove}
           accessibilityRole="button"
-          accessibilityLabel={`${removeLabel}: ${item.word.word}`}>
+          accessibilityLabel={`${t('common.remove')}: ${item.word.word}`}>
           <Icon name="close-circle-outline" size={26} color={colors.textSecondary} />
         </Pressable>
       )}
@@ -36,20 +38,20 @@ export default function WordCard({ item, onPress, onRemove, removeLabel = 'Remov
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles(c => ({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: spacing.md,
     marginBottom: spacing.sm,
     borderRadius: 16,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
-  word: { fontSize: 19, fontWeight: '700', color: colors.text },
-  trans: { marginTop: spacing.xs, color: colors.textSecondary },
-  sub: { marginTop: spacing.xs, fontSize: 13, color: colors.textSecondary },
-  ok: { fontSize: 22, color: colors.success },
+  word: { fontSize: 19, fontWeight: '700', color: c.text },
+  trans: { marginTop: spacing.xs, color: c.textSecondary },
+  sub: { marginTop: spacing.xs, fontSize: 13, color: c.textSecondary },
+  ok: { fontSize: 22, color: c.success },
   remove: { marginLeft: spacing.sm, padding: 4 },
-});
+}));

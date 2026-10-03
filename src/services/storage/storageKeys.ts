@@ -1,1 +1,4 @@
-export const storageKeys={words:'@vocabulary/words'};
+export const storageKeys = {
+  words: '@vocabulary/words',
+  searchHistory: '@vocabulary/searchHistory',
+};

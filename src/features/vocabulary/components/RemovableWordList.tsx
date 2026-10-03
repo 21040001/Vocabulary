@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, Text, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../app/navigation/AppNavigator';
+import { useT } from '../../../app/settings/SettingsContext';
 import { getAllStoredWords, StoredWord, updateWordState } from '../../../services/storage/wordStorage';
+import { makeStyles } from '../../../theme/makeStyles';
+import { spacing } from '../../../theme/spacing';
 import { UserWordState } from '../types/word';
 import WordCard from './WordCard';
-import { colors } from '../../../theme/colors';
-import { spacing } from '../../../theme/spacing';
 
 type Props = {
   title: string;
@@ -19,7 +20,13 @@ type Props = {
 
 const UNDO_MS = 4000;
 
+/**
+ * Favoriler / Öğrenilenler gibi listeler için ortak ekran.
+ * ✕ ile kelime listeden çıkar; 4 sn boyunca geri alınabilir.
+ */
 export default function RemovableWordList({ title, emptyText, filter, removeChanges, removedMessage }: Props) {
+  const s = useStyles();
+  const t = useT();
   const [items, setItems] = useState<StoredWord[]>([]);
   const [undo, setUndo] = useState<StoredWord | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -35,11 +42,14 @@ export default function RemovableWordList({ title, emptyText, filter, removeChan
     }, [load]),
   );
 
-  useEffect(() => () => {
-    if (timer.current) {
-      clearTimeout(timer.current);
-    }
-  }, []);
+  useEffect(
+    () => () => {
+      if (timer.current) {
+        clearTimeout(timer.current);
+      }
+    },
+    [],
+  );
 
   const remove = async (item: StoredWord) => {
     setItems(list => list.filter(x => x.word.id !== item.word.id));
@@ -83,7 +93,7 @@ export default function RemovableWordList({ title, emptyText, filter, removeChan
             “{undo.word.word}” {removedMessage}
           </Text>
           <Pressable onPress={undoRemove} hitSlop={10}>
-            <Text style={s.undo}>UNDO</Text>
+            <Text style={s.undo}>{t('common.undo')}</Text>
           </Pressable>
         </View>
       )}
@@ -91,10 +101,10 @@ export default function RemovableWordList({ title, emptyText, filter, removeChan
   );
 }
 
-const s = StyleSheet.create({
-  c: { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
-  t: { fontSize: 28, fontWeight: '700', color: colors.text, marginBottom: 16 },
-  e: { textAlign: 'center', marginTop: 40, color: colors.textSecondary },
+const useStyles = makeStyles(c => ({
+  c: { flex: 1, backgroundColor: c.background, padding: spacing.lg },
+  t: { fontSize: 28, fontWeight: '700', color: c.text, marginBottom: 16 },
+  e: { textAlign: 'center', marginTop: 40, color: c.textSecondary },
   snack: {
     position: 'absolute',
     left: spacing.lg,
@@ -105,8 +115,8 @@ const s = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: spacing.md,
     borderRadius: 12,
-    backgroundColor: colors.text,
+    backgroundColor: c.inverseBg,
   },
-  snackText: { flex: 1, color: colors.white },
-  undo: { marginLeft: spacing.md, color: '#A5B4FC', fontWeight: '700' },
-});
+  snackText: { flex: 1, color: c.inverseText },
+  undo: { marginLeft: spacing.md, color: c.inverseAccent, fontWeight: '700' },
+}));

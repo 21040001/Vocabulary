@@ -1,0 +1,331 @@
+/**
+ * Arayüz metinleri. Yeni metin eklerken önce `en`e ekleyin; `uz` aynı anahtarlara
+ * sahip olmak ZORUNDA (TypeScript eksik anahtarı hata olarak gösterir).
+ * {n}, {text} gibi yer tutucular t('key', { n: 5 }) ile doldurulur.
+ */
+
+const en = {
+  // sekmeler ve başlıklar
+  'tab.home': 'Home',
+  'tab.favorites': 'Favorites',
+  'tab.learned': 'Learned',
+  'tab.statistics': 'Statistics',
+  'tab.quiz': 'Quiz',
+  'screen.word': 'Word',
+  'screen.flashcards': 'Flashcards',
+  'screen.pronunciation': 'Pronunciation',
+  'screen.settings': 'Settings',
+
+  // ortak
+  'common.cancel': 'Cancel',
+  'common.ok': 'OK',
+  'common.loading': 'Loading...',
+  'common.undo': 'UNDO',
+  'common.remove': 'Remove',
+
+  // ana sayfa
+  'home.greeting': 'Keep learning 👋',
+  'home.todayProgress': "Today's progress",
+  'home.toReview': 'To review',
+  'home.learned': 'Learned',
+  'home.accuracy': 'Accuracy',
+  'home.searchEn': 'Search an English word...',
+  'home.searchUz': 'Type an Uzbek word...',
+  'home.search': 'Search',
+  'home.notFound': 'Word not found',
+  'home.recent': 'Recent searches',
+  'home.clear': 'Clear',
+
+  // kelime kartı / detay
+  'word.machine': 'Machine translation',
+  'word.learnedDone': '✓ Learned',
+  'word.markLearned': 'Mark as learned',
+  'word.details': 'Details →',
+  'word.translations': 'Translations',
+  'word.examples': 'Examples',
+  'word.synonyms': 'Synonyms: {list}',
+  'word.antonyms': 'Antonyms: {list}',
+
+  // kelime türleri
+  'pos.noun': 'noun',
+  'pos.verb': 'verb',
+  'pos.adjective': 'adjective',
+  'pos.adverb': 'adverb',
+  'pos.pronoun': 'pronoun',
+  'pos.preposition': 'preposition',
+  'pos.postposition': 'postposition',
+  'pos.conjunction': 'conjunction',
+  'pos.interjection': 'interjection',
+  'pos.numeral': 'numeral',
+  'pos.determiner': 'determiner',
+  'pos.article': 'article',
+  'pos.particle': 'particle',
+  'pos.phrase': 'phrase',
+  'pos.contraction': 'contraction',
+
+  // yazılı quiz
+  'quiz.title': 'Quiz',
+  'quiz.question': 'What does this word mean?',
+  'quiz.typeUz': 'Type the Uzbek translation...',
+  'quiz.typeEn': 'Type the English translation...',
+  'quiz.check': 'Check answer',
+  'quiz.correct': '✓ Correct!',
+  'quiz.notQuite': '✕ Not quite',
+  'quiz.wrongBtn': 'Wrong',
+  'quiz.correctBtn': 'Correct',
+  'quiz.complete': 'Quiz complete!',
+  'quiz.accuracy': '{n}% accuracy',
+  'quiz.toReview': 'Words to review',
+  'quiz.again': 'Practice again',
+  'quiz.noWords': 'No words to review',
+  'quiz.noWordsHint': 'Search some words, or start with the most common words:',
+  'quiz.addEnUz': '+ {n} new words (EN → UZ)',
+  'quiz.addUzEn': '+ {n} new words (UZ → EN)',
+  'quiz.noNewWords': 'No new words left in the dictionary.',
+  'quiz.dictUnavailable': 'Dictionary is not available.',
+  'quiz.cards': '🃏 Cards',
+  'quiz.speak': '🎤 Speak',
+
+  // kartlar
+  'cards.due': 'To review',
+  'cards.favorites': 'Favorites',
+  'cards.all': 'All',
+  'cards.frontWord': 'Front: word → translation ⇄',
+  'cards.frontTrans': 'Front: translation → word ⇄',
+  'cards.emptyTitle': 'No cards here',
+  'cards.emptyDue': 'Nothing to review right now. Try "All", or add new words in Quiz.',
+  'cards.emptyFav': 'Mark words with ♥ to study them here.',
+  'cards.emptyAll': 'Search words or add new words in Quiz first.',
+  'cards.done': 'Session complete 🎉',
+  'cards.firstTry': 'known on first try',
+  'cards.keepPracticing': 'Keep practicing',
+  'cards.startAgain': 'Start again',
+  'cards.tapToFlip': 'Tap to flip',
+  'cards.showAnswer': 'Show answer',
+  'cards.didntKnow': "✕ Didn't know",
+  'cards.knewIt': '✓ Knew it',
+
+  // telaffuz
+  'pron.sayEnglish': 'Say it in English',
+  'pron.noWords': 'No words yet',
+  'pron.wellDone': 'Well done 🎉',
+  'pron.firstTry': 'pronounced correctly on first try',
+  'pron.practice': 'Practice these',
+  'pron.score': 'Score: {n}',
+  'pron.listening': '🎙️ Listening…',
+  'pron.close': '👍 Close enough',
+  'pron.heard': '✕ We heard “{text}”',
+  'pron.tryAgain': ' — try again ({n} left)',
+  'pron.tapStop': 'Tap to stop',
+  'pron.tapSpeak': 'Tap and speak',
+  'pron.next': 'Next →',
+  'pron.errPermission': 'Microphone permission denied',
+  'pron.errUnavailable': 'Speech recognition is not available on this device',
+  'pron.errGeneric': 'Speech recognition error',
+  'pron.micTitle': 'Microphone',
+  'pron.micMessage': 'The microphone is used to check your pronunciation.',
+
+  // seslendirme
+  'speak.noVoiceTitle': 'Voice not installed',
+  'speak.noVoiceMsg': 'Your phone has no Uzbek voice. You can install one in the text-to-speech settings.',
+  'speak.openSettings': 'Open settings',
+
+  // listeler
+  'fav.title': 'Favorites',
+  'fav.empty': 'No favorite words yet.',
+  'fav.removed': 'removed from favorites',
+  'learned.title': 'Learned words',
+  'learned.empty': 'No learned words yet.',
+  'learned.removed': 'moved back to practice',
+
+  // istatistik
+  'stats.title': 'Statistics',
+  'stats.total': 'Total words',
+  'stats.favorites': 'Favorites',
+  'stats.learned': 'Learned',
+  'stats.accuracy': 'Accuracy',
+  'stats.progress': 'Learning progress',
+  'stats.quiz': 'Quiz performance',
+  'stats.reviews': 'Reviews: {n}',
+  'stats.correct': 'Correct: {n}',
+  'stats.wrong': 'Wrong: {n}',
+
+  // ayarlar
+  'settings.language': 'Language',
+  'settings.appearance': 'Appearance',
+  'settings.system': 'System',
+  'settings.light': 'Light',
+  'settings.dark': 'Dark',
+  'settings.history': 'Search history',
+  'settings.clearHistory': 'Clear search history',
+  'settings.historyCleared': 'Search history cleared',
+  'settings.about': 'About',
+  'settings.attribution':
+    'Dictionary data: Wiktionary (CC BY-SA 4.0, via kaikki.org) and Tatoeba (CC BY 2.0 FR).',
+};
+
+export type TKey = keyof typeof en;
+
+const uz: Record<TKey, string> = {
+  'tab.home': 'Bosh sahifa',
+  'tab.favorites': 'Sevimlilar',
+  'tab.learned': 'Oʻrganilgan',
+  'tab.statistics': 'Statistika',
+  'tab.quiz': 'Test',
+  'screen.word': 'Soʻz',
+  'screen.flashcards': 'Kartochkalar',
+  'screen.pronunciation': 'Talaffuz',
+  'screen.settings': 'Sozlamalar',
+
+  'common.cancel': 'Bekor qilish',
+  'common.ok': 'OK',
+  'common.loading': 'Yuklanmoqda...',
+  'common.undo': 'QAYTARISH',
+  'common.remove': 'Olib tashlash',
+
+  'home.greeting': 'Oʻrganishda davom eting 👋',
+  'home.todayProgress': 'Bugungi natijalar',
+  'home.toReview': 'Takrorlash',
+  'home.learned': 'Oʻrganilgan',
+  'home.accuracy': 'Aniqlik',
+  'home.searchEn': 'Inglizcha soʻz kiriting...',
+  'home.searchUz': 'Oʻzbekcha soʻz kiriting...',
+  'home.search': 'Qidirish',
+  'home.notFound': 'Soʻz topilmadi',
+  'home.recent': 'Soʻnggi qidiruvlar',
+  'home.clear': 'Tozalash',
+
+  'word.machine': 'Mashina tarjimasi',
+  'word.learnedDone': '✓ Oʻrganildi',
+  'word.markLearned': 'Oʻrganildi deb belgilash',
+  'word.details': 'Batafsil →',
+  'word.translations': 'Tarjimalar',
+  'word.examples': 'Misollar',
+  'word.synonyms': 'Sinonimlar: {list}',
+  'word.antonyms': 'Antonimlar: {list}',
+
+  'pos.noun': 'ot',
+  'pos.verb': 'feʼl',
+  'pos.adjective': 'sifat',
+  'pos.adverb': 'ravish',
+  'pos.pronoun': 'olmosh',
+  'pos.preposition': 'predlog',
+  'pos.postposition': 'koʻmakchi',
+  'pos.conjunction': 'bogʻlovchi',
+  'pos.interjection': 'undov',
+  'pos.numeral': 'son',
+  'pos.determiner': 'aniqlovchi',
+  'pos.article': 'artikl',
+  'pos.particle': 'yuklama',
+  'pos.phrase': 'ibora',
+  'pos.contraction': 'qisqartma',
+
+  'quiz.title': 'Test',
+  'quiz.question': 'Bu soʻz nimani anglatadi?',
+  'quiz.typeUz': 'Oʻzbekcha tarjimasini yozing...',
+  'quiz.typeEn': 'Inglizcha tarjimasini yozing...',
+  'quiz.check': 'Tekshirish',
+  'quiz.correct': '✓ Toʻgʻri!',
+  'quiz.notQuite': '✕ Notoʻgʻri',
+  'quiz.wrongBtn': 'Xato',
+  'quiz.correctBtn': 'Toʻgʻri',
+  'quiz.complete': 'Test yakunlandi!',
+  'quiz.accuracy': 'Aniqlik: {n}%',
+  'quiz.toReview': 'Takrorlash kerak boʻlgan soʻzlar',
+  'quiz.again': 'Yana mashq qilish',
+  'quiz.noWords': 'Takrorlash uchun soʻz yoʻq',
+  'quiz.noWordsHint': 'Soʻz qidiring yoki eng koʻp ishlatiladigan soʻzlardan boshlang:',
+  'quiz.addEnUz': '+ {n} ta yangi soʻz (EN → UZ)',
+  'quiz.addUzEn': '+ {n} ta yangi soʻz (UZ → EN)',
+  'quiz.noNewWords': 'Lugʻatda yangi soʻz qolmadi.',
+  'quiz.dictUnavailable': 'Lugʻat mavjud emas.',
+  'quiz.cards': '🃏 Kartochka',
+  'quiz.speak': '🎤 Gapirish',
+
+  'cards.due': 'Takrorlash',
+  'cards.favorites': 'Sevimlilar',
+  'cards.all': 'Hammasi',
+  'cards.frontWord': 'Old tomoni: soʻz → tarjima ⇄',
+  'cards.frontTrans': 'Old tomoni: tarjima → soʻz ⇄',
+  'cards.emptyTitle': 'Bu yerda kartochka yoʻq',
+  'cards.emptyDue': 'Hozircha takrorlash uchun soʻz yoʻq. «Hammasi»ni tanlang yoki Testda yangi soʻz qoʻshing.',
+  'cards.emptyFav': 'Soʻzlarni bu yerda oʻrganish uchun ularni ♥ bilan belgilang.',
+  'cards.emptyAll': 'Avval soʻz qidiring yoki Testda yangi soʻz qoʻshing.',
+  'cards.done': 'Mashgʻulot tugadi 🎉',
+  'cards.firstTry': 'birinchi urinishda bilindi',
+  'cards.keepPracticing': 'Mashq qilishda davom eting',
+  'cards.startAgain': 'Qaytadan boshlash',
+  'cards.tapToFlip': 'Aylantirish uchun bosing',
+  'cards.showAnswer': 'Javobni koʻrsatish',
+  'cards.didntKnow': '✕ Bilmadim',
+  'cards.knewIt': '✓ Bildim',
+
+  'pron.sayEnglish': 'Inglizcha ayting',
+  'pron.noWords': 'Hali soʻz yoʻq',
+  'pron.wellDone': 'Barakalla 🎉',
+  'pron.firstTry': 'birinchi urinishda toʻgʻri aytildi',
+  'pron.practice': 'Bularni mashq qiling',
+  'pron.score': 'Ball: {n}',
+  'pron.listening': '🎙️ Tinglanmoqda…',
+  'pron.close': '👍 Deyarli toʻgʻri',
+  'pron.heard': '✕ Eshitildi: “{text}”',
+  'pron.tryAgain': ' — yana urinib koʻring ({n} ta qoldi)',
+  'pron.tapStop': 'Toʻxtatish',
+  'pron.tapSpeak': 'Bosing va gapiring',
+  'pron.next': 'Keyingisi →',
+  'pron.errPermission': 'Mikrofonga ruxsat berilmadi',
+  'pron.errUnavailable': 'Bu qurilmada nutqni aniqlash mavjud emas',
+  'pron.errGeneric': 'Nutqni aniqlashda xatolik',
+  'pron.micTitle': 'Mikrofon',
+  'pron.micMessage': 'Mikrofon talaffuzingizni tekshirish uchun ishlatiladi.',
+
+  'speak.noVoiceTitle': 'Ovoz oʻrnatilmagan',
+  'speak.noVoiceMsg':
+    'Telefoningizda oʻzbekcha ovoz yoʻq. Uni “Matnni nutqqa aylantirish” sozlamalaridan oʻrnatishingiz mumkin.',
+  'speak.openSettings': 'Sozlamalarni ochish',
+
+  'fav.title': 'Sevimlilar',
+  'fav.empty': 'Hali sevimli soʻzlar yoʻq.',
+  'fav.removed': 'sevimlilardan olib tashlandi',
+  'learned.title': 'Oʻrganilgan soʻzlar',
+  'learned.empty': 'Hali oʻrganilgan soʻzlar yoʻq.',
+  'learned.removed': 'qayta mashq roʻyxatiga qaytarildi',
+
+  'stats.title': 'Statistika',
+  'stats.total': 'Jami soʻzlar',
+  'stats.favorites': 'Sevimlilar',
+  'stats.learned': 'Oʻrganilgan',
+  'stats.accuracy': 'Aniqlik',
+  'stats.progress': 'Oʻrganish darajasi',
+  'stats.quiz': 'Test natijalari',
+  'stats.reviews': 'Takrorlashlar: {n}',
+  'stats.correct': 'Toʻgʻri: {n}',
+  'stats.wrong': 'Xato: {n}',
+
+  'settings.language': 'Til',
+  'settings.appearance': 'Koʻrinish',
+  'settings.system': 'Tizim',
+  'settings.light': 'Yorugʻ',
+  'settings.dark': 'Qorongʻi',
+  'settings.history': 'Qidiruv tarixi',
+  'settings.clearHistory': 'Qidiruv tarixini tozalash',
+  'settings.historyCleared': 'Qidiruv tarixi tozalandi',
+  'settings.about': 'Ilova haqida',
+  'settings.attribution':
+    'Lugʻat maʼlumotlari: Wiktionary (CC BY-SA 4.0, kaikki.org orqali) va Tatoeba (CC BY 2.0 FR).',
+};
+
+export type AppLanguage = 'uz' | 'en';
+export const STRINGS: Record<AppLanguage, Record<TKey, string>> = { en, uz };
+
+export type TFunction = (key: TKey, params?: Record<string, string | number>) => string;
+
+export function translate(language: AppLanguage, key: TKey, params?: Record<string, string | number>) {
+  let s = STRINGS[language][key] ?? STRINGS.en[key] ?? key;
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      s = s.split(`{${k}}`).join(String(v));
+    }
+  }
+  return s;
+}

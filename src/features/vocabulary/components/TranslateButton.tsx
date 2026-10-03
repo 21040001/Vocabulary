@@ -1,1 +1,18 @@
-import React from 'react';import {Pressable,StyleSheet,Text} from 'react-native';import {colors} from '../../../theme/colors';import {spacing} from '../../../theme/spacing';export default function TranslateButton({title,onPress}:{title:string;onPress:()=>void}){return <Pressable style={s.button} onPress={onPress}><Text style={s.text}>{title}</Text></Pressable>}const s=StyleSheet.create({button:{marginTop:spacing.md,padding:spacing.md,borderRadius:12,backgroundColor:colors.primary,alignItems:'center'},text:{color:colors.white,fontSize:16,fontWeight:'600'}});
+import React from 'react';
+import { Pressable, Text } from 'react-native';
+import { makeStyles } from '../../../theme/makeStyles';
+import { spacing } from '../../../theme/spacing';
+
+export default function TranslateButton({ title, onPress }: { title: string; onPress: () => void }) {
+  const s = useStyles();
+  return (
+    <Pressable style={s.button} onPress={onPress}>
+      <Text style={s.text}>{title}</Text>
+    </Pressable>
+  );
+}
+
+const useStyles = makeStyles(c => ({
+  button: { marginTop: spacing.md, padding: spacing.md, borderRadius: 12, backgroundColor: c.primary, alignItems: 'center' },
+  text: { color: c.white, fontSize: 16, fontWeight: '600' },
+}));

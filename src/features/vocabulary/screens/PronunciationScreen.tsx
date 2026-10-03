@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, SafeAreaView, ScrollView, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getAllStoredWords } from '../../../services/storage/wordStorage';
 import SpeakButton from '../components/SpeakButton';
@@ -7,16 +7,24 @@ import useSpeechRecognition from '../hooks/useSpeechRecognition';
 import { Word, wordLang } from '../types/word';
 import { displayGroups, posLabel } from '../utils/partOfSpeech';
 import { judgePronunciation, Verdict } from '../utils/pronunciationMatch';
-import { colors } from '../../../theme/colors';
+import { useT } from '../../../app/settings/SettingsContext';
+import { makeStyles } from '../../../theme/makeStyles';
 import { spacing } from '../../../theme/spacing';
+
+/**
+ * Telaffuz quiz'i: Özbekçe gösterilir, kullanıcı İngilizcesini SESLİ söyler.
+ * Telefonun konuşma tanıması duyduğunu yazar, doğru kelimeyle karşılaştırılır.
+ */
 
 const SESSION_SIZE = 10;
 const MAX_TRIES = 3;
 
 type Card = {
   word: Word;
+  /** Ekranda gösterilen Özbekçe */
   prompt: string;
   pos: string | null;
+  /** Söylenmesi beklenen İngilizce (biri yeterli) */
   expected: string[];
 };
 
@@ -42,6 +50,8 @@ function shuffle<T>(a: T[]): T[] {
 }
 
 export default function PronunciationScreen() {
+  const s = useStyles();
+  const t = useT();
   const { listen, stop, listening, partial, error } = useSpeechRecognition();
   const [cards, setCards] = useState<Card[]>([]);
   const [i, setI] = useState(0);
@@ -132,8 +142,8 @@ export default function PronunciationScreen() {
     return (
       <SafeAreaView style={s.c}>
         <View style={s.center}>
-          <Text style={s.title}>No words yet</Text>
-          <Text style={s.sub}>Search words or add new words in Quiz first.</Text>
+          <Text style={s.title}>{t('pron.noWords')}</Text>
+          <Text style={s.sub}>{t('cards.emptyAll')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -144,14 +154,14 @@ export default function PronunciationScreen() {
       <SafeAreaView style={s.c}>
         <ScrollView contentContainerStyle={s.p}>
           <View style={s.center}>
-            <Text style={s.title}>Well done 🎉</Text>
+            <Text style={s.title}>{t('pron.wellDone')}</Text>
             <Text style={s.big}>
               {score} / {cards.length}
             </Text>
-            <Text style={s.sub}>pronounced correctly on first try</Text>
+            <Text style={s.sub}>{t('pron.firstTry')}</Text>
             {toPractice.length > 0 && (
               <View style={s.box}>
-                <Text style={s.boxTitle}>Practice these</Text>
+                <Text style={s.boxTitle}>{t('pron.practice')}</Text>
                 {toPractice.map(c => (
                   <View key={c.word.id} style={s.practiceRow}>
                     <Text style={s.practiceText}>
@@ -163,7 +173,7 @@ export default function PronunciationScreen() {
               </View>
             )}
             <Pressable style={s.primary} onPress={load}>
-              <Text style={s.primaryText}>Start again</Text>
+              <Text style={s.primaryText}>{t('cards.startAgain')}</Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -180,12 +190,12 @@ export default function PronunciationScreen() {
           <Text style={s.counter}>
             {i + 1} / {cards.length}
           </Text>
-          <Text style={s.counter}>Score: {score}</Text>
+          <Text style={s.counter}>{t('pron.score', { n: score })}</Text>
         </View>
 
         <View style={s.card}>
-          <Text style={s.label}>Say it in English</Text>
-          {cur.pos && <Text style={s.pos}>{posLabel(cur.pos)}</Text>}
+          <Text style={s.label}>{t('pron.sayEnglish')}</Text>
+          {cur.pos && <Text style={s.pos}>{posLabel(cur.pos, t)}</Text>}
           <Text style={s.prompt}>{cur.prompt}</Text>
 
           {(revealed || passed) && (
@@ -197,13 +207,15 @@ export default function PronunciationScreen() {
           {(revealed || passed) && enWord?.pronunciation && <Text style={s.ipa}>{enWord.pronunciation}</Text>}
         </View>
 
+        {/* Dinleme / sonuç */}
         <View style={s.feedback}>
-          {listening && <Text style={s.listening}>🎙️ Listening… {partial ? `“${partial}”` : ''}</Text>}
-          {!listening && verdict === 'correct' && <Text style={s.good}>✓ Correct!</Text>}
-          {!listening && verdict === 'close' && <Text style={s.good}>👍 Close enough</Text>}
+          {listening && <Text style={s.listening}>{t('pron.listening')} {partial ? `“${partial}”` : ''}</Text>}
+          {!listening && verdict === 'correct' && <Text style={s.good}>{t('quiz.correct')}</Text>}
+          {!listening && verdict === 'close' && <Text style={s.good}>{t('pron.close')}</Text>}
           {!listening && verdict === 'wrong' && (
             <Text style={s.bad}>
-              ✕ We heard “{heard}”{!outOfTries ? ` — try again (${MAX_TRIES - tries} left)` : ''}
+              {t('pron.heard', { text: heard })}
+              {!outOfTries ? t('pron.tryAgain', { n: MAX_TRIES - tries }) : ''}
             </Text>
           )}
           {!listening && error && !verdict && <Text style={s.bad}>{error}</Text>}
@@ -214,21 +226,21 @@ export default function PronunciationScreen() {
             style={[s.mic, listening && s.micActive]}
             onPress={onMic}
             accessibilityRole="button"
-            accessibilityLabel={listening ? 'Stop listening' : 'Start speaking'}>
+            accessibilityLabel={listening ? t('pron.tapStop') : t('pron.tapSpeak')}>
             <Text style={s.micIcon}>{listening ? '⏹' : '🎤'}</Text>
-            <Text style={s.micText}>{listening ? 'Tap to stop' : 'Tap and speak'}</Text>
+            <Text style={s.micText}>{listening ? t('pron.tapStop') : t('pron.tapSpeak')}</Text>
           </Pressable>
         )}
 
         <View style={s.row}>
           {!passed && !revealed && (
             <Pressable style={[s.secondary, { flex: 1 }]} onPress={reveal}>
-              <Text style={s.secondaryText}>Show answer</Text>
+              <Text style={s.secondaryText}>{t('cards.showAnswer')}</Text>
             </Pressable>
           )}
           {(passed || outOfTries || revealed) && (
             <Pressable style={[s.primary, { flex: 1, marginTop: 0 }]} onPress={next}>
-              <Text style={s.primaryText}>Next →</Text>
+              <Text style={s.primaryText}>{t('pron.next')}</Text>
             </Pressable>
           )}
         </View>
@@ -237,24 +249,24 @@ export default function PronunciationScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  c: { flex: 1, backgroundColor: colors.background },
+const useStyles = makeStyles(c => ({
+  c: { flex: 1, backgroundColor: c.background },
   p: { padding: spacing.lg },
   center: { alignItems: 'center', padding: spacing.lg },
   top: { flexDirection: 'row', justifyContent: 'space-between' },
-  counter: { color: colors.textSecondary, fontWeight: '600' },
+  counter: { color: c.textSecondary, fontWeight: '600' },
   card: {
     marginTop: spacing.md,
     padding: spacing.lg,
     minHeight: 220,
     borderRadius: 20,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  label: { color: colors.textSecondary },
+  label: { color: c.textSecondary },
   pos: {
     marginTop: spacing.sm,
     paddingHorizontal: 8,
@@ -263,50 +275,50 @@ const s = StyleSheet.create({
     overflow: 'hidden',
     fontSize: 12,
     fontWeight: '700',
-    color: colors.primary,
+    color: c.primary,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     textTransform: 'uppercase',
   },
-  prompt: { marginTop: spacing.sm, fontSize: 34, fontWeight: '700', color: colors.text, textAlign: 'center' },
+  prompt: { marginTop: spacing.sm, fontSize: 34, fontWeight: '700', color: c.text, textAlign: 'center' },
   answerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: spacing.md },
-  answer: { fontSize: 26, fontWeight: '700', color: colors.success },
-  ipa: { marginTop: 4, color: colors.textSecondary },
+  answer: { fontSize: 26, fontWeight: '700', color: c.success },
+  ipa: { marginTop: 4, color: c.textSecondary },
   feedback: { minHeight: 48, justifyContent: 'center', alignItems: 'center', marginTop: spacing.md },
-  listening: { color: colors.primary, fontSize: 16, fontWeight: '600', textAlign: 'center' },
-  good: { color: colors.success, fontSize: 20, fontWeight: '700' },
-  bad: { color: '#DC2626', fontSize: 16, fontWeight: '600', textAlign: 'center' },
+  listening: { color: c.primary, fontSize: 16, fontWeight: '600', textAlign: 'center' },
+  good: { color: c.success, fontSize: 20, fontWeight: '700' },
+  bad: { color: c.danger, fontSize: 16, fontWeight: '600', textAlign: 'center' },
   mic: {
     alignSelf: 'center',
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.sm,
   },
-  micActive: { backgroundColor: '#DC2626' },
+  micActive: { backgroundColor: c.danger },
   micIcon: { fontSize: 40 },
-  micText: { marginTop: 2, color: colors.white, fontSize: 12, fontWeight: '600' },
+  micText: { marginTop: 2, color: c.white, fontSize: 12, fontWeight: '600' },
   row: { flexDirection: 'row', gap: 8, marginTop: spacing.lg },
-  primary: { marginTop: spacing.lg, padding: 16, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center' },
-  primaryText: { color: colors.white, fontWeight: '700', fontSize: 16 },
-  secondary: { padding: 16, borderRadius: 12, borderWidth: 1, borderColor: colors.primary, alignItems: 'center' },
-  secondaryText: { color: colors.primary, fontWeight: '700', fontSize: 16 },
-  title: { fontSize: 26, fontWeight: '700', color: colors.text, textAlign: 'center' },
-  big: { marginTop: spacing.md, fontSize: 48, fontWeight: '700', color: colors.primary },
-  sub: { marginTop: spacing.sm, color: colors.textSecondary, textAlign: 'center' },
+  primary: { marginTop: spacing.lg, padding: 16, borderRadius: 12, backgroundColor: c.primary, alignItems: 'center' },
+  primaryText: { color: c.white, fontWeight: '700', fontSize: 16 },
+  secondary: { padding: 16, borderRadius: 12, borderWidth: 1, borderColor: c.primary, alignItems: 'center' },
+  secondaryText: { color: c.primary, fontWeight: '700', fontSize: 16 },
+  title: { fontSize: 26, fontWeight: '700', color: c.text, textAlign: 'center' },
+  big: { marginTop: spacing.md, fontSize: 48, fontWeight: '700', color: c.primary },
+  sub: { marginTop: spacing.sm, color: c.textSecondary, textAlign: 'center' },
   box: {
     alignSelf: 'stretch',
     marginTop: spacing.lg,
     padding: spacing.md,
     borderRadius: 12,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
-  boxTitle: { fontWeight: '700', color: colors.text, marginBottom: 6 },
+  boxTitle: { fontWeight: '700', color: c.text, marginBottom: 6 },
   practiceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
-  practiceText: { flex: 1, color: colors.text },
-});
+  practiceText: { flex: 1, color: c.text },
+}));
