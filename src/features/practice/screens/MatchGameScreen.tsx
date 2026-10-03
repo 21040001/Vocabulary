@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSettings } from '../../../app/settings/SettingsContext';
 import { makeStyles } from '../../../theme/makeStyles';
 import { spacing } from '../../../theme/spacing';
+import { recordActivity } from '../../../services/storage/activity';
 import NeedWords from '../components/NeedWords';
 import { getSessionWords } from '../services/practiceData';
 import { buildMatchPairs, MatchPair, shuffle } from '../utils/questions';
@@ -78,6 +79,7 @@ export default function MatchGameScreen() {
     }
     if (p.id === selected) {
       setMatched(m => new Set(m).add(p.id));
+      recordActivity(true).catch(() => undefined);
       setSelected(null);
     } else {
       setMistakes(x => x + 1);

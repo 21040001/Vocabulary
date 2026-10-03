@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getAllStoredWords } from '../../../services/storage/wordStorage';
+import { recordActivity } from '../../../services/storage/activity';
 import SpeakButton from '../components/SpeakButton';
 import useSpeechRecognition from '../hooks/useSpeechRecognition';
 import { Word, wordLang } from '../types/word';
@@ -111,6 +112,9 @@ export default function PronunciationScreen() {
     setHeard(r.best);
     setVerdict(r.verdict);
     const ok = r.verdict !== 'wrong';
+    if (attempt === 1) {
+      recordActivity(ok).catch(() => undefined);
+    }
     if (ok && attempt === 1 && !revealed) {
       setScore(sc => sc + 1);
     }

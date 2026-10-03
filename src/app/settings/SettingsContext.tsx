@@ -9,11 +9,18 @@ export type ThemeMode = 'system' | 'light' | 'dark';
 type Settings = {
   language: AppLanguage;
   themeMode: ThemeMode;
+  /** Günde çalışılacak kelime (cevaplanan soru) sayısı */
+  dailyGoal: number;
+  reminderEnabled: boolean;
+  /** 'HH:MM' */
+  reminderTime: string;
 };
 
 type SettingsContextValue = Settings & {
   setLanguage: (l: AppLanguage) => void;
   setThemeMode: (m: ThemeMode) => void;
+  setDailyGoal: (n: number) => void;
+  setReminder: (enabled: boolean, time?: string) => void;
   /** Gerçekte kullanılan tema (system seçiliyse telefonun ayarı) */
   isDark: boolean;
   colors: Colors;
@@ -21,7 +28,13 @@ type SettingsContextValue = Settings & {
 };
 
 const STORAGE_KEY = '@vocabulary/settings';
-const DEFAULTS: Settings = { language: 'uz', themeMode: 'system' };
+const DEFAULTS: Settings = {
+  language: 'uz',
+  themeMode: 'system',
+  dailyGoal: 10,
+  reminderEnabled: true,
+  reminderTime: '20:00',
+};
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
 
@@ -56,6 +69,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       ...settings,
       setLanguage: language => update({ language }),
       setThemeMode: themeMode => update({ themeMode }),
+      setDailyGoal: dailyGoal => update({ dailyGoal }),
+      setReminder: (reminderEnabled, reminderTime) =>
+        update(reminderTime ? { reminderEnabled, reminderTime } : { reminderEnabled }),
       isDark,
       colors: isDark ? darkColors : lightColors,
       t: (key, params) => translate(settings.language, key, params),

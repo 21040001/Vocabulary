@@ -261,3 +261,35 @@ export async function getRandomWordTexts(
   }
   return out;
 }
+
+/**
+ * Günün kelimesi: tarihe göre belirlenir (aynı gün herkes / her açılışta aynı kelime).
+ * En sık ~3000 kelime arasından, örnek cümlesi olanlar tercih edilir.
+ */
+export async function getWordOfTheDay(dayKey: string, lang: Lang = 'en'): Promise<Word | null> {
+  const db = await getVocabDb();
+  const { self } = SIDE[lang];
+  let h = 0;
+  for (const ch of dayKey) {
+    h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  }
+  const base = `FROM words w
+      WHERE w.lang = ? AND w.freq_rank BETWEEN 50 AND 3000
+        AND EXISTS (SELECT 1 FROM translations t WHERE t.${self} = w.id)`;
+  const withEx = `${base} AND EXISTS (SELECT 1 FROM translations t JOIN translation_examples te ON te.translation_id = t.id WHERE t.${self} = w.id)`;
+  const any = `FROM words w
+      WHERE w.lang = ? AND w.freq_rank IS NOT NULL
+        AND EXISTS (SELECT 1 FROM translations t WHERE t.${self} = w.id)`;
+  for (const where of [withEx, base, any]) {
+    const { rows: cnt } = await db.execute(`SELECT COUNT(*) AS n ${where}`, [lang]);
+    const n = Number(cnt[0]?.n ?? 0);
+    if (!n) {
+      continue;
+    }
+    const { rows } = await db.execute(`SELECT w.text ${where} ORDER BY w.freq_rank LIMIT 1 OFFSET ?`, [lang, h % n]);
+    if (rows.length) {
+      return lookupWord(String(rows[0].text), lang);
+    }
+  }
+  return null;
+}

@@ -10,7 +10,10 @@ import {
   HistoryItem,
   removeFromSearchHistory,
 } from '../../../services/storage/searchHistory';
+import { computeStreak, getActivity, StreakInfo } from '../../../services/storage/activity';
 import { makeStyles } from '../../../theme/makeStyles';
+import StreakCard from '../../progress/components/StreakCard';
+import WordOfTheDay from '../../progress/components/WordOfTheDay';
 import { spacing } from '../../../theme/spacing';
 import DirectionToggle from '../components/DirectionToggle';
 import RecentSearches from '../components/RecentSearches';
@@ -26,12 +29,13 @@ import { displayGroups, meaningPosList } from '../utils/partOfSpeech';
 
 export default function HomeScreen() {
   const s = useStyles();
-  const { colors, t } = useSettings();
+  const { colors, t, dailyGoal } = useSettings();
   const [q, setQ] = useState('');
   const [lang, setLang] = useState<Lang>('en');
   const [searched, setSearched] = useState('');
   const [stats, setStats] = useState<TodayStatistics | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [streak, setStreak] = useState<StreakInfo | null>(null);
   const { word, state, loading, error, searchWord, toggleFavorite, toggleLearned } = useWord();
   const nav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   // Arama yapıldıktan sonra aynı metin için öneri listesini gizle
@@ -40,11 +44,13 @@ export default function HomeScreen() {
   const load = async () => {
     setStats(await getTodayStatistics());
     setHistory(await getSearchHistory());
+    setStreak(computeStreak(await getActivity(), dailyGoal));
   };
   useFocusEffect(
     useCallback(() => {
       load();
-    }, []),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dailyGoal]),
   );
 
   const run = (text: string, l: Lang = lang) => {
@@ -81,7 +87,9 @@ export default function HomeScreen() {
             </View>
           ))}
         </View>
+        {streak && <StreakCard info={streak} onPractice={() => nav.navigate('ChoiceQuiz', { mode: 'read' })} />}
 
+        <View style={{ height: spacing.md }} />
         <DirectionToggle value={lang} onChange={changeLang} />
         <SearchInput
           value={q}
@@ -125,6 +133,7 @@ export default function HomeScreen() {
             onOpenDetails={() => nav.navigate('WordDetail', { word })}
           />
         )}
+        {!word && !loading && <WordOfTheDay />}
       </ScrollView>
     </SafeAreaView>
   );
@@ -135,7 +144,7 @@ const useStyles = makeStyles(c => ({
   content: { padding: spacing.lg },
   greeting: { color: c.textSecondary },
   title: { marginTop: 4, fontSize: 24, fontWeight: '700', color: c.text },
-  stats: { flexDirection: 'row', gap: 8, marginVertical: 16 },
+  stats: { flexDirection: 'row', gap: 8, marginTop: 16 },
   stat: { flex: 1, padding: 12, borderRadius: 14, backgroundColor: c.surface, borderWidth: 1, borderColor: c.border },
   num: { fontSize: 22, fontWeight: '700', color: c.primary },
   label: { fontSize: 12, color: c.textSecondary },
