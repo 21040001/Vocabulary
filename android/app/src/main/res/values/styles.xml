@@ -1,9 +1,17 @@
 <resources>
 
-    <!-- Base application theme. -->
+    <!-- Uygulamanın asıl teması -->
     <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <!-- Customize your theme here. -->
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
+    </style>
+
+    <!-- Açılış ekranı (Android 12+ SplashScreen API; eski sürümlerde de aynı görünür).
+         Renk ve ikon: values/ic_launcher_background.xml ve drawable-*/splash_icon.png
+         (scripts/branding/make_icons.py üretir). -->
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+        <item name="postSplashScreenTheme">@style/AppTheme</item>
     </style>
 
 </resources>

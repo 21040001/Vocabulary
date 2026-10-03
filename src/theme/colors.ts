@@ -9,6 +9,8 @@ export type Colors = {
   white: string;
   success: string;
   danger: string;
+  /** "Qiyin" gibi orta durumlar */
+  warning: string;
   /** Alt bildirim (snackbar) gibi ters renkli alanlar */
   inverseBg: string;
   inverseText: string;
@@ -25,6 +27,7 @@ export const lightColors: Colors = {
   white: '#FFFFFF',
   success: '#16A34A',
   danger: '#DC2626',
+  warning: '#D97706',
   inverseBg: '#1E293B',
   inverseText: '#FFFFFF',
   inverseAccent: '#A5B4FC',
@@ -40,6 +43,7 @@ export const darkColors: Colors = {
   white: '#FFFFFF',
   success: '#22C55E',
   danger: '#F87171',
+  warning: '#F59E0B',
   inverseBg: '#E2E8F0',
   inverseText: '#0F172A',
   inverseAccent: '#4F46E5',

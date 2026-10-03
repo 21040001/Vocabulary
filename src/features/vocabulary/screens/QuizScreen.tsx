@@ -7,7 +7,7 @@ import { makeStyles } from '../../../theme/makeStyles';
 import { spacing } from '../../../theme/spacing';
 import SpeakButton from '../components/SpeakButton';
 import { getFrequentWords } from '../services/dictionaryService';
-import { recordReview } from '../services/reviewService';
+import { isDue, recordReview } from '../services/reviewService';
 import { Lang, Word, wordLang } from '../types/word';
 import { isAnswerCorrect } from '../utils/answerUtils';
 
@@ -31,11 +31,7 @@ export default function QuizScreen() {
   const load = async () => {
     const now = new Date();
     const a = (await getAllStoredWords())
-      .filter(
-        x =>
-          x.state.learningStatus !== 'mastered' &&
-          (!x.state.nextReviewAt || new Date(x.state.nextReviewAt) <= now),
-      )
+      .filter(x => isDue(x.state, now))
       .map(x => x.word)
       .slice(0, SIZE);
     setW(a);

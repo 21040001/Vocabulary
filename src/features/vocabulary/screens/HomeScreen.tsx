@@ -10,7 +10,7 @@ import {
   HistoryItem,
   removeFromSearchHistory,
 } from '../../../services/storage/searchHistory';
-import { computeStreak, getActivity, StreakInfo } from '../../../services/storage/activity';
+import { computeStreak, getActivity, StreakInfo } from '../../../core/progress/activity';
 import { makeStyles } from '../../../theme/makeStyles';
 import StreakCard from '../../progress/components/StreakCard';
 import WordOfTheDay from '../../progress/components/WordOfTheDay';

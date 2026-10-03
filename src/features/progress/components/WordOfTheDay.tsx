@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../app/navigation/AppNavigator';
 import { useSettings } from '../../../app/settings/SettingsContext';
-import { dateKey } from '../../../services/storage/activity';
+import { dateKey } from '../../../core/progress/activity';
 import { getStoredWord, saveWord } from '../../../services/storage/wordStorage';
 import { makeStyles } from '../../../theme/makeStyles';
 import { spacing } from '../../../theme/spacing';

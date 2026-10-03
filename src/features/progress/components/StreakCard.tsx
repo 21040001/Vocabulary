@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useSettings } from '../../../app/settings/SettingsContext';
-import { StreakInfo } from '../../../services/storage/activity';
+import { StreakInfo } from '../../../core/progress/activity';
 import { makeStyles } from '../../../theme/makeStyles';
 import { spacing } from '../../../theme/spacing';
 

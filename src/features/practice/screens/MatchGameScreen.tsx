@@ -4,7 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSettings } from '../../../app/settings/SettingsContext';
 import { makeStyles } from '../../../theme/makeStyles';
 import { spacing } from '../../../theme/spacing';
-import { recordActivity } from '../../../services/storage/activity';
+import { recordActivity } from '../../../core/progress/activity';
 import NeedWords from '../components/NeedWords';
 import { getSessionWords } from '../services/practiceData';
 import { buildMatchPairs, MatchPair, shuffle } from '../utils/questions';

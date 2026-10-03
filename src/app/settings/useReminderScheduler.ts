@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
-import { computeStreak, getActivity } from '../../services/storage/activity';
+import { computeStreak, getActivity } from '../../core/progress/activity';
 import { getAllStoredWords } from '../../services/storage/wordStorage';
+import { isDue } from '../../features/vocabulary/services/reviewService';
 import { scheduleReminders } from '../../services/notifications/reminders';
 import { useSettings } from './SettingsContext';
 
@@ -14,9 +15,7 @@ export default function useReminderScheduler() {
       const [log, words] = await Promise.all([getActivity(), getAllStoredWords()]);
       const now = new Date();
       const streak = computeStreak(log, dailyGoal, now);
-      const dueCount = words.filter(
-        x => x.state.learningStatus !== 'mastered' && (!x.state.nextReviewAt || new Date(x.state.nextReviewAt) <= now),
-      ).length;
+      const dueCount = words.filter(x => isDue(x.state, now)).length;
       await scheduleReminders({
         enabled: reminderEnabled,
         time: reminderTime,

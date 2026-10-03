@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { getWord } from '../services/wordService';
 import { getStoredWord, updateWordState } from '../../../services/storage/wordStorage';
+import { learnedChanges } from '../services/reviewService';
 import { addToSearchHistory } from '../../../services/storage/searchHistory';
 import { Lang, UserWordState, Word } from '../types/word';
 
@@ -49,10 +50,7 @@ export default function useWord() {
     if (!word || !state) {
       return;
     }
-    const x = await updateWordState(word.id, {
-      isLearned: !state.isLearned,
-      learningStatus: !state.isLearned ? 'mastered' : 'learning',
-    });
+    const x = await updateWordState(word.id, learnedChanges(!state.isLearned));
     if (x) {
       setState(x.state);
     }

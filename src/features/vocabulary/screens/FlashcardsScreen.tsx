@@ -3,18 +3,21 @@ import { Animated, Pressable, SafeAreaView, ScrollView, Text, View } from 'react
 import { useFocusEffect } from '@react-navigation/native';
 import { getAllStoredWords, StoredWord } from '../../../services/storage/wordStorage';
 import SpeakButton from '../components/SpeakButton';
-import { recordReview } from '../services/reviewService';
-import { Lang, Word, wordLang } from '../types/word';
+import { isDue, previewIntervals, recordReview } from '../services/reviewService';
+import { Lang, UserWordState, Word, wordLang } from '../types/word';
+import { Grade, GRADES } from '../../../core/srs/sm2';
 import { displayGroups, posLabel } from '../utils/partOfSpeech';
-import { useT } from '../../../app/settings/SettingsContext';
+import { useSettings, useT } from '../../../app/settings/SettingsContext';
 import { makeStyles } from '../../../theme/makeStyles';
 import { spacing } from '../../../theme/spacing';
-import type { TKey } from '../../../i18n/strings';
+import type { TFunction, TKey } from '../../../i18n/strings';
 
 /**
  * Kart çevirme (flashcard) ile ezber.
  * - Ön yüz: kelime. Dokununca döner, arka yüzde çeviriler + örnek cümle.
- * - "Bilmedim" denen kart oturumun sonuna tekrar eklenir; bilinene kadar döner.
+ * - Arka yüzde 4 düğme (SM-2): Bilmadim / Qiyin / Yaxshi / Oson.
+ *   Altlarında bir sonraki tekrarın ne zaman olacağı yazar.
+ * - "Bilmadim" denen kart oturumun sonuna tekrar eklenir; bilinene kadar döner.
  * - Kelimenin tekrar takvimine (reviewService) sadece İLK cevap işlenir.
  */
 
@@ -27,6 +30,27 @@ const DECKS: { key: Deck; label: TKey }[] = [
   { key: 'favorites', label: 'cards.favorites' },
   { key: 'all', label: 'cards.all' },
 ];
+
+const GRADE_LABEL: Record<Grade, TKey> = {
+  again: 'cards.again',
+  hard: 'cards.hard',
+  good: 'cards.good',
+  easy: 'cards.easy',
+};
+
+/** 0 → "10 daq", 3 → "3 kun", 45 → "2 oy" */
+export function formatInterval(days: number, t: TFunction): string {
+  if (days <= 0) {
+    return t('srs.minutes', { n: 10 });
+  }
+  if (days < 30) {
+    return t('srs.days', { n: Math.round(days) });
+  }
+  if (days < 365) {
+    return t('srs.months', { n: Math.round(days / 30) });
+  }
+  return t('srs.years', { n: Math.round((days / 365) * 10) / 10 });
+}
 
 function shuffle<T>(a: T[]): T[] {
   const r = [...a];
@@ -41,11 +65,7 @@ function pickDeck(all: StoredWord[], deck: Deck): Word[] {
   const now = new Date();
   let list = all;
   if (deck === 'due') {
-    list = all.filter(
-      x =>
-        x.state.learningStatus !== 'mastered' &&
-        (!x.state.nextReviewAt || new Date(x.state.nextReviewAt) <= now),
-    );
+    list = all.filter(x => isDue(x.state, now));
   } else if (deck === 'favorites') {
     list = all.filter(x => x.state.isFavorite);
   }
@@ -64,10 +84,13 @@ export default function FlashcardsScreen() {
   const [flipped, setFlipped] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const answered = useRef(new Set<string>()); // ilk cevabı verilmiş kartlar
+  const states = useRef(new Map<string, UserWordState>()); // aralık önizlemesi için
   const flip = useRef(new Animated.Value(0)).current;
 
   const start = useCallback(async (d: Deck) => {
-    const words = pickDeck(await getAllStoredWords(), d);
+    const all = await getAllStoredWords();
+    states.current = new Map(all.map(x => [x.word.id, x.state]));
+    const words = pickDeck(all, d);
     answered.current = new Set();
     flip.setValue(0);
     setFlipped(false);
@@ -91,13 +114,17 @@ export default function FlashcardsScreen() {
     setFlipped(f => !f);
   };
 
-  const answer = async (ok: boolean) => {
+  const answer = async (grade: Grade) => {
     if (!cur) {
       return;
     }
+    const ok = grade !== 'again';
     if (!answered.current.has(cur.id)) {
       answered.current.add(cur.id);
-      await recordReview(cur.id, ok);
+      const updated = await recordReview(cur.id, grade);
+      if (updated) {
+        states.current.set(cur.id, updated.state);
+      }
       if (ok) {
         setKnown(k => k + 1);
       } else {
@@ -106,7 +133,7 @@ export default function FlashcardsScreen() {
     }
     flip.setValue(0);
     setFlipped(false);
-    // Bilinmeyen kart sıranın sonuna döner
+    // "Bilmadim" denen kart sıranın sonuna döner
     setQueue(q => (ok ? q.slice(1) : [...q.slice(1), q[0]]));
   };
 
@@ -207,14 +234,7 @@ export default function FlashcardsScreen() {
         </Pressable>
 
         {flipped ? (
-          <View style={s.answerRow}>
-            <Pressable style={[s.answerBtn, s.bad]} onPress={() => answer(false)}>
-              <Text style={s.answerText}>{t('cards.didntKnow')}</Text>
-            </Pressable>
-            <Pressable style={[s.answerBtn, s.good]} onPress={() => answer(true)}>
-              <Text style={s.answerText}>{t('cards.knewIt')}</Text>
-            </Pressable>
-          </View>
+          <GradeButtons state={states.current.get(cur.id)} onGrade={answer} />
         ) : (
           <Pressable style={s.primary} onPress={toggleFlip}>
             <Text style={s.primaryText}>{t('cards.showAnswer')}</Text>
@@ -222,6 +242,38 @@ export default function FlashcardsScreen() {
         )}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+/** SM-2 düğmeleri: her birinin altında bir sonraki tekrar zamanı */
+function GradeButtons({ state, onGrade }: { state?: UserWordState; onGrade: (g: Grade) => void }) {
+  const s = useStyles();
+  const { t, colors } = useSettings();
+  const ivl = state ? previewIntervals(state) : null;
+  const bg: Record<Grade, string> = {
+    again: colors.danger,
+    hard: colors.warning,
+    good: colors.success,
+    easy: colors.primary,
+  };
+  return (
+    <View>
+      <Text style={s.gradeHint}>{t('cards.gradeHint')}</Text>
+      <View style={s.answerRow}>
+        {GRADES.map(g => (
+          <Pressable
+            key={g}
+            style={[s.answerBtn, { backgroundColor: bg[g] }]}
+            onPress={() => onGrade(g)}
+            accessibilityRole="button">
+            <Text style={s.answerText} numberOfLines={1} adjustsFontSizeToFit>
+              {t(GRADE_LABEL[g])}
+            </Text>
+            {ivl && <Text style={s.answerSub}>{formatInterval(ivl[g], t)}</Text>}
+          </Pressable>
+        ))}
+      </View>
+    </View>
   );
 }
 
@@ -321,11 +373,11 @@ const useStyles = makeStyles(c => ({
   hint: { position: 'absolute', bottom: 12, alignSelf: 'center', fontSize: 12, color: c.textSecondary },
   primary: { marginTop: spacing.lg, padding: 16, borderRadius: 12, backgroundColor: c.primary, alignItems: 'center' },
   primaryText: { color: c.white, fontWeight: '700', fontSize: 16 },
-  answerRow: { flexDirection: 'row', gap: 8, marginTop: spacing.lg },
-  answerBtn: { flex: 1, padding: 16, borderRadius: 12, alignItems: 'center' },
-  bad: { backgroundColor: c.danger },
-  good: { backgroundColor: c.success },
-  answerText: { color: c.white, fontWeight: '700', fontSize: 16 },
+  gradeHint: { marginTop: spacing.lg, textAlign: 'center', color: c.textSecondary },
+  answerRow: { flexDirection: 'row', gap: 6, marginTop: spacing.sm },
+  answerBtn: { flex: 1, paddingVertical: 12, paddingHorizontal: 4, borderRadius: 12, alignItems: 'center' },
+  answerText: { color: c.white, fontWeight: '700', fontSize: 15 },
+  answerSub: { marginTop: 2, color: c.white, fontSize: 12, opacity: 0.9 },
   done: { alignItems: 'center', marginTop: spacing.xl },
   doneTitle: { fontSize: 26, fontWeight: '700', color: c.text, textAlign: 'center' },
   doneSub: { marginTop: spacing.sm, color: c.textSecondary, textAlign: 'center' },

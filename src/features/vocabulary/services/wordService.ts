@@ -1,15 +1,9 @@
-import { Platform } from 'react-native';
-
 import { getStoredWord, saveWord } from '../../../services/storage/wordStorage';
 import { Lang, makeWordId, Word } from '../types/word';
 import { normalize } from '../utils/normalize';
 import { lookupWord } from './dictionaryService';
+import { API_URL } from '../../../core/config';
 
-/**
- * Backend adresi. Android emülatörü bilgisayara 10.0.2.2 ile, iOS simülatörü
- * localhost ile ulaşır. Gerçek cihazda bilgisayarınızın yerel IP'sini yazın.
- */
-const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
 const API_TIMEOUT_MS = 6000;
 
 async function fetchFromApi(text: string, from: Lang, needTranslation: boolean): Promise<Word> {

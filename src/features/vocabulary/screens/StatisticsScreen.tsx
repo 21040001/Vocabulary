@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSettings } from '../../../app/settings/SettingsContext';
-import { ActivityLog, computeStreak, getActivity, lastDays } from '../../../services/storage/activity';
+import { ActivityLog, computeStreak, getActivity, lastDays } from '../../../core/progress/activity';
 import ActivityHeatmap from '../../progress/components/ActivityHeatmap';
 import WeeklyChart from '../../progress/components/WeeklyChart';
 import { makeStyles } from '../../../theme/makeStyles';

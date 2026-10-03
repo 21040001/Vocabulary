@@ -13,6 +13,7 @@ import WordDetailScreen from '../../features/vocabulary/screens/WordDetailScreen
 import FlashcardsScreen from '../../features/vocabulary/screens/FlashcardsScreen';
 import PronunciationScreen from '../../features/vocabulary/screens/PronunciationScreen';
 import SettingsScreen from '../../features/settings/screens/SettingsScreen';
+import AboutScreen from '../../features/settings/screens/AboutScreen';
 import PracticeHubScreen from '../../features/practice/screens/PracticeHubScreen';
 import ChoiceQuizScreen from '../../features/practice/screens/ChoiceQuizScreen';
 import FillBlankScreen from '../../features/practice/screens/FillBlankScreen';
@@ -27,6 +28,7 @@ export type RootStackParamList = {
   Flashcards: undefined;
   Pronunciation: undefined;
   Settings: undefined;
+  About: undefined;
   WriteQuiz: undefined;
   ChoiceQuiz: { mode: 'read' | 'listen' };
   FillBlank: undefined;
@@ -117,6 +119,7 @@ export default function AppNavigator() {
           options={{ title: t('screen.pronunciation') }}
         />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: t('screen.settings') }} />
+        <Stack.Screen name="About" component={AboutScreen} options={{ title: t('about.title') }} />
         <Stack.Screen name="WriteQuiz" component={QuizScreen} options={{ title: t('practice.write') }} />
         <Stack.Screen
           name="ChoiceQuiz"

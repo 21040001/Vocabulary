@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 import { useSettings } from '../../../app/settings/SettingsContext';
-import { ActivityLog, activityLevel as level, addDays, dateKey } from '../../../services/storage/activity';
+import { ActivityLog, activityLevel as level, addDays, dateKey } from '../../../core/progress/activity';
 import { makeStyles } from '../../../theme/makeStyles';
 
 const WEEKS = 15;

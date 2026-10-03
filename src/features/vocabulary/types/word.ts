@@ -44,6 +44,10 @@ export type UserWordState = {
   nextReviewAt?: string;
   createdAt: string;
   lastReviewedAt?: string;
+  /** SM-2: art arda doğru sayısı, unutma sayısı, kolaylık katsayısı */
+  reps?: number;
+  lapses?: number;
+  ease?: number;
 };
 
 export const wordLang = (w: Pick<Word, 'lang'>): Lang => w.lang ?? 'en';

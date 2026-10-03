@@ -2,7 +2,7 @@
  * Yerel sözlük (vocab.db) bağlantısı.
  *
  * vocab.db uygulamayla birlikte gelir ve SALT OKUNURDUR. Kullanıcı verisi
- * (favoriler, quiz ilerlemesi) eskisi gibi AsyncStorage'da kalır.
+ * (kelime listesi, tekrar takvimi, seri) ayrı bir veritabanındadır: src/core/db/userDb.ts
  *
  * Sözlüğü yeniden ürettiğinizde VOCAB_DB_VERSION değerini güncelleyin:
  * uygulama eski kopyayı yenisiyle değiştirir.

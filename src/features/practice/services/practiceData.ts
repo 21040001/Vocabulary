@@ -1,11 +1,11 @@
 import { getAllStoredWords, StoredWord } from '../../../services/storage/wordStorage';
+import { isDue } from '../../vocabulary/services/reviewService';
 import { getRandomWordTexts } from '../../vocabulary/services/dictionaryService';
 import { Lang, Word, wordLang } from '../../vocabulary/types/word';
 import { normalize } from '../../vocabulary/utils/normalize';
 import { shuffle } from '../utils/questions';
 
-const isDue = (x: StoredWord, now: Date) =>
-  x.state.learningStatus !== 'mastered' && (!x.state.nextReviewAt || new Date(x.state.nextReviewAt) <= now);
+const dueNow = (x: StoredWord, now: Date) => isDue(x.state, now);
 
 /**
  * Bir alıştırma oturumu için kelimeler: önce tekrar zamanı gelenler, sonra diğerleri.
@@ -15,8 +15,8 @@ export async function getSessionWords(size: number, filter: (w: Word) => boolean
   const all = await getAllStoredWords();
   const now = new Date();
   const ok = all.filter(x => filter(x.word));
-  const due = shuffle(ok.filter(x => isDue(x, now)));
-  const rest = shuffle(ok.filter(x => !isDue(x, now)));
+  const due = shuffle(ok.filter(x => dueNow(x, now)));
+  const rest = shuffle(ok.filter(x => !dueNow(x, now)));
   return {
     session: [...due, ...rest].slice(0, size).map(x => x.word),
     all: all.map(x => x.word),

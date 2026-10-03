@@ -1,5 +1,6 @@
 export const storageKeys = {
-  words: '@vocabulary/words',
   searchHistory: '@vocabulary/searchHistory',
-  activity: '@vocabulary/activity',
+  /** Eski sürümler: artık user.db'de (src/core/db/legacy.ts ilk açılışta aktarır) */
+  legacyWords: '@vocabulary/words',
+  legacyActivity: '@vocabulary/activity',
 };
