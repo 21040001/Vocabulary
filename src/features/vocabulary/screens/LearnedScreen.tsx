@@ -1,1 +1,18 @@
-import React,{useCallback,useState}from'react';import{FlatList,StyleSheet,Text,View}from'react-native';import{useFocusEffect,useNavigation}from'@react-navigation/native';import{NativeStackNavigationProp}from'@react-navigation/native-stack';import{RootStackParamList}from'../../../app/navigation/AppNavigator';import{getAllStoredWords,StoredWord}from'../../../services/storage/wordStorage';import WordCard from'../components/WordCard';import{colors}from'../../../theme/colors';import{spacing}from'../../../theme/spacing';export default function LearnedScreen(){const[w,setW]=useState<StoredWord[]>([]);const nav=useNavigation<NativeStackNavigationProp<RootStackParamList>>();const load=async()=>setW((await getAllStoredWords()).filter(x=>x.state.isLearned));useFocusEffect(useCallback(()=>{load()},[]));return <View style={s.c}><Text style={s.t}>Learned Words</Text><FlatList data={w} keyExtractor={x=>x.word.id} renderItem={({item})=><WordCard item={item} onPress={()=>nav.navigate('WordDetail',{word:item.word})}/>} ListEmptyComponent={<Text style={s.e}>No learned words yet.</Text>}/></View>}const s=StyleSheet.create({c:{flex:1,backgroundColor:colors.background,padding:spacing.lg},t:{fontSize:28,fontWeight:'700',color:colors.text,marginBottom:16},e:{textAlign:'center',marginTop:40,color:colors.textSecondary}});
+import React from 'react';
+import { StoredWord } from '../../../services/storage/wordStorage';
+import RemovableWordList from '../components/RemovableWordList';
+
+const isLearned = (x: StoredWord) => x.state.isLearned;
+
+export default function LearnedScreen() {
+  return (
+    <RemovableWordList
+      title="Learned Words"
+      emptyText="No learned words yet."
+      filter={isLearned}
+      // Öğrenilenlerden çıkan kelime tekrar çalışılacaklar arasına (Quiz) döner
+      removeChanges={{ isLearned: false, learningStatus: 'learning', nextReviewAt: undefined }}
+      removedMessage="moved back to practice"
+    />
+  );
+}
