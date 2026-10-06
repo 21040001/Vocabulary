@@ -1,8 +1,8 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Keyboard, SafeAreaView, ScrollView, Text, View } from 'react-native';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../../app/navigation/AppNavigator';
+import { RootStackParamList, RootTabParamList } from '../../../app/navigation/AppNavigator';
 import { useSettings } from '../../../app/settings/SettingsContext';
 import {
   clearSearchHistory,
@@ -38,6 +38,8 @@ export default function HomeScreen() {
   const [streak, setStreak] = useState<StreakInfo | null>(null);
   const { word, state, loading, error, searchWord, toggleFavorite, toggleLearned } = useWord();
   const nav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootTabParamList, 'Home'>>();
+  const incoming = route.params?.q;
   // Arama yapıldıktan sonra aynı metin için öneri listesini gizle
   const suggestions = useSuggestions(q, lang, q !== searched);
 
@@ -60,6 +62,14 @@ export default function HomeScreen() {
     setSearched(text);
     searchWord(text, l).then(load);
   };
+
+  // Grammar vb. uygulamadan gelen kelime: İngilizce olarak hemen ara
+  useEffect(() => {
+    if (incoming?.trim()) {
+      run(incoming.trim(), 'en');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [incoming]);
 
   const changeLang = (l: Lang) => {
     setLang(l);

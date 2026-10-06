@@ -21,6 +21,16 @@ export const SUITE = {
 };
 
 /**
+ * Seri uygulamaları arası bağlantılar. Grammar'da bir kelimeye basınca Vocabulary
+ * `linguauz-vocab://word/<kelime>` adresiyle açılır. Paket adı kesinleşince
+ * (android/app/build.gradle → applicationId) buradaki androidPackage'ı güncelleyin;
+ * kurulu değilse kullanıcı Play Market sayfasına yönlendirilir.
+ */
+export const SUITE_LINKS = {
+  vocabulary: { scheme: 'linguauz-vocab', androidPackage: 'com.vocabulary' },
+};
+
+/**
  * Backend adresi.
  * - Geliştirme (__DEV__): Android emülatörü bilgisayara 10.0.2.2 ile, iOS simülatörü localhost ile ulaşır.
  *   Gerçek cihazda test ederken bilgisayarınızın yerel IP'sini yazın (örn. http://192.168.1.20:3000).

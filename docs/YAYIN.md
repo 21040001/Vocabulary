@@ -176,3 +176,41 @@ Kontrol listesi: sözlük açılıyor mu (vocab.db), arama, sesli okuma, mikrofo
 - Her uygulama Play'de ayrı bir giriş, ayrı `applicationId`, aynı imza anahtarı.
 - `src/core/` klasörü tüm uygulamalarda aynı kalacak (ileride ortak paket). Yedek dosyası biçimi (`linguauz-backup`) ortak: bir uygulamada alınan yedek diğerine yüklenebilir.
 - Hesap + senkron (Aşama 2) eklenince gizlilik politikası ve Veri güvenliği formu güncellenmeli.
+
+---
+
+## 7. Grammar'dan kelime açma (derin bağlantı)
+
+Grammar'da örnek cümledeki bir kelimeye dokunulunca Vocabulary `linguauz-vocab://word/<kelime>` adresiyle açılır ve kelime ana sayfada aranmış olarak gelir (tarjima, misollar, ♥ / oʻrganildi düğmeleri).
+
+Kod tarafı hazır (`AppNavigator.tsx` → `linking`, `HomeScreen` → `route.params.q`). Sizin yapmanız gereken tek şey **`android/app/src/main/AndroidManifest.xml`** içinde `MainActivity`'ye şu `intent-filter`'ı eklemek (mevcut `MAIN/LAUNCHER` filtresinin **altına**, ayrı bir blok olarak):
+
+```xml
+<activity
+  android:name=".MainActivity"
+  android:launchMode="singleTask"
+  ... >
+  <intent-filter>
+    <action android:name="android.intent.action.MAIN" />
+    <category android:name="android.intent.category.LAUNCHER" />
+  </intent-filter>
+
+  <!-- LinguaUz: Grammar → Vocabulary -->
+  <intent-filter>
+    <action android:name="android.intent.action.VIEW" />
+    <category android:name="android.intent.category.DEFAULT" />
+    <category android:name="android.intent.category.BROWSABLE" />
+    <data android:scheme="linguauz-vocab" />
+  </intent-filter>
+</activity>
+```
+
+`launchMode="singleTask"` React Native şablonunda zaten var; yoksa ekleyin (uygulama açıkken gelen bağlantı yeni bir kopya açmasın).
+
+**Deneme** (telefon USB ile bağlıyken):
+```
+adb shell am start -W -a android.intent.action.VIEW -d "linguauz-vocab://word/apple"
+```
+
+- Şema adı `src/core/config.ts` → `SUITE_LINKS.vocabulary.scheme` ile aynı olmalı. Her iki uygulamada da `core/config.ts` aynı tutulur.
+- `SUITE_LINKS.vocabulary.androidPackage`: Vocabulary'nin gerçek `applicationId`'si. Grammar, Vocabulary kurulu değilse kullanıcıyı bu paketin Play Market sayfasına yönlendirir — **paket adı kesinleşince iki projede de güncelleyin**.

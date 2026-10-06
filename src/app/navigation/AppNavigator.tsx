@@ -1,6 +1,13 @@
 import React from 'react';
 import { Pressable } from 'react-native';
-import { DarkTheme, DefaultTheme, NavigationContainer, Theme, useNavigation } from '@react-navigation/native';
+import {
+  DarkTheme,
+  DefaultTheme,
+  LinkingOptions,
+  NavigationContainer,
+  Theme,
+  useNavigation,
+} from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -21,6 +28,7 @@ import MatchGameScreen from '../../features/practice/screens/MatchGameScreen';
 import LevelsScreen from '../../features/practice/screens/LevelsScreen';
 import { Word } from '../../features/vocabulary/types/word';
 import { useSettings } from '../settings/SettingsContext';
+import { SUITE_LINKS } from '../../core/config';
 
 export type RootStackParamList = {
   MainTabs: undefined;
@@ -36,11 +44,30 @@ export type RootStackParamList = {
   Levels: undefined;
 };
 export type RootTabParamList = {
-  Home: undefined;
+  /** q: dışarıdan (Grammar vb.) gelen kelime — linguauz-vocab://word/<q> */
+  Home: { q?: string } | undefined;
   Favorites: undefined;
   Learned: undefined;
   Statistics: undefined;
   Quiz: undefined;
+};
+
+/**
+ * Derin bağlantılar: linguauz-vocab://word/<kelime> → Ana sayfa, kelime aranmış hâlde.
+ * Seri uygulamaları (Grammar…) kelimeye dokunulunca bunu açar.
+ */
+const linking: LinkingOptions<RootStackParamList> = {
+  prefixes: [`${SUITE_LINKS.vocabulary.scheme}://`],
+  config: {
+    initialRouteName: 'MainTabs',
+    screens: {
+      MainTabs: {
+        screens: {
+          Home: { path: 'word/:q', parse: { q: (v: string) => decodeURIComponent(v) } },
+        },
+      },
+    },
+  },
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -108,7 +135,7 @@ export default function AppNavigator() {
   };
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer theme={navTheme} linking={linking}>
       <Stack.Navigator>
         <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
         <Stack.Screen name="WordDetail" component={WordDetailScreen} options={{ title: t('screen.word') }} />
