@@ -5,6 +5,7 @@
  *  - bildirim metni o anki "tekrar bekleyen kelime" sayısını içerir
  *  - uygulama birkaç gün açılmasa da hatırlatsın diye 3 güne kadar planlanır
  */
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import notifee, { AndroidImportance, AuthorizationStatus, TriggerType } from '@notifee/react-native';
 import type { TFunction } from '../../i18n/strings';
 
@@ -52,10 +53,40 @@ export async function ensurePermission(): Promise<boolean> {
   }
 }
 
+/**
+ * Sadece kontrol eder, izin penceresi AÇMAZ. Arka planda planlama yaparken bu kullanılmalı:
+ * requestPermission() her çağrıda sistem izin ekranını başlatır, bu da uygulamayı
+ * arka plana atıp geri getirir (AppState background → active). Planlayıcı AppState'i
+ * dinlediği için bu sonsuz döngüye girer: status bar yanıp söner, uygulama kapanır.
+ */
+export async function hasPermission(): Promise<boolean> {
+  try {
+    const s = await notifee.getNotificationSettings();
+    return s.authorizationStatus >= AuthorizationStatus.AUTHORIZED;
+  } catch {
+    return false;
+  }
+}
+
+const ASKED_KEY = '@reminders/permissionAsked';
+
+/** İzni yalnızca ilk açılışta bir kez sorar; sonra Ayarlar'daki anahtar sorar. */
+export async function askPermissionOnce(): Promise<void> {
+  try {
+    if (await AsyncStorage.getItem(ASKED_KEY)) {
+      return;
+    }
+    await AsyncStorage.setItem(ASKED_KEY, '1');
+    await ensurePermission();
+  } catch {
+    // izin sorulamazsa bildirimsiz devam
+  }
+}
+
 export async function scheduleReminders(input: ReminderInput): Promise<void> {
   try {
     await cancelReminders();
-    if (!input.enabled || !(await ensurePermission())) {
+    if (!input.enabled || !(await hasPermission())) {
       return;
     }
     const { t } = input;
